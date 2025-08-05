@@ -1,0 +1,110 @@
+// Place these at the top of your script, after your let renderer, scene, camera, etc.
+let sky, sun, moon;
+
+// ...inside initGame(), after scene and camera are created, before or after lighting...
+function initGame() {
+    if (renderer) return;
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // --- SKY ---
+    const skyGeometry = new THREE.SphereGeometry(200, 32, 32);
+    const skyMaterial = new THREE.MeshBasicMaterial({
+        color: 0x87ceeb,
+        side: THREE.BackSide
+    });
+    sky = new THREE.Mesh(skyGeometry, skyMaterial);
+    scene.add(sky);
+
+    // --- SUN ---
+    const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff66, emissive: 0xffff66 });
+    sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    scene.add(sun);
+
+    // --- MOON ---
+    const moonGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+    const moonMaterial = new THREE.MeshBasicMaterial({ color: 0xccccff, emissive: 0xccccff });
+    moon = new THREE.Mesh(moonGeometry, moonMaterial);
+    scene.add(moon);
+
+    // ...existing code...
+}
+
+// ...inside updateDayNightCycle(), after const sunAngle = dayTime * Math.PI * 2; ...
+function updateDayNightCycle() {
+    dayTime += daySpeed;
+    if (dayTime > 1) dayTime = 0; // Reset to midnight
+    if (!directionalLight || !ambientLight) return;
+    // Update directional light position based on time of day
+    directionalLight.position.y = Math.sin(dayTime * Math.PI * 2) * 20; // Sun height
+    directionalLight.position.x = Math.cos(dayTime * Math.PI * 2) * 20; // Sun position
+
+    // Calculate sun position and light color/intensity
+    const sunAngle = dayTime * Math.PI * 2;
+
+    // --- Sun & Moon positions ---
+    const sunRadius = 40;
+    if (sun) {
+        sun.position.set(
+            Math.cos(sunAngle) * sunRadius,
+            Math.sin(sunAngle) * sunRadius,
+            0
+        );
+        sun.visible = Math.sin(sunAngle) > 0;
+    }
+    if (moon) {
+        // Moon is opposite the sun
+        moon.position.set(
+            Math.cos(sunAngle + Math.PI) * sunRadius,
+            Math.sin(sunAngle + Math.PI) * sunRadius,
+            0
+        );
+        moon.visible = Math.sin(sunAngle) <= 0;
+    }
+
+    // --- Sky color ---
+    if (sky && sky.material) {
+        // Interpolate between day and night colors
+        const t = Math.max(0, Math.sin(sunAngle));
+        const dayColor = new THREE.Color(0x87ceeb); // blue
+        const nightColor = new THREE.Color(0x181824); // dark
+        sky.material.color.copy(dayColor.clone().lerp(nightColor, 1 - t));
+    }
+
+    // ...existing code for lights...
+    directionalLight.position.set(Math.cos(sunAngle) * 20, Math.sin(sunAngle) * 20, 0);
+    ambientLight.position.set(Math.cos(sunAngle) * 20, Math.sin(sunAngle) * 20, 0);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.camera.left = -20;
+    // Light intensity and color
+    const intensity = 0.2 + 0.8 * Math.max(0, Math.sin(sunAngle));
+    directionalLight.intensity = intensity;
+    ambientLight.intensity = 0.2 + 0.3 * Math.max(0, Math.sin(sunAngle));
+    // Update directional light shadow map size
+    directionalLight.shadow.mapSize.width = 1024 * intensity;
+    directionalLight.shadow.mapSize.height = 1024 * intensity;
+    directionalLight.shadow.camera.left = -20 * intensity;
+    directionalLight.shadow.camera.right = 20 * intensity;
+    // Color transitions (warm at sunrise/sunset, white at noon, blue at night)
+    if (Math.sin(sunAngle) > 0) {
+        // Day
+        directionalLight.color.setHSL(0.13, 0.7, 0.9); // warm sunlight
+        ambientLight.color.setHSL(0.6, 0.2, 0.8); // soft daylight
+
+    } else {
+        // Night
+        directionalLight.color.setHSL(0.6, 0.7, 0.3); // moonlight
+        ambientLight.color.setHSL(0.6, 0.5, 0.2); // dark blue
+
+    }
+}
+
+// ...existing code...

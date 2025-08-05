@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RE_start OS - Military Grade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use a strict monospace font for authentic terminal feel -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'IBM Plex Mono', monospace; /* More industrial monospace */
+            background-color: #080808; /* Even darker, near black */
+            color: #1aff00; /* More intense neon green */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent body scroll */
+        }
+        .terminal-container {
+            width: 95%;
+            max-width: 950px; /* Slightly wider for more content */
+            height: 90vh;
+            background-color: #030303; /* Pure black for terminal background */
+            border-radius: 0.5rem; /* Slightly less rounded for a tougher look */
+            /* Solid, thick border with sharper, focused glow */
+            box-shadow: 0 0 40px rgba(26, 255, 0, 0.9), inset 0 0 15px rgba(26, 255, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 1.75rem; /* Increased padding */
+            box-sizing: border-box;
+            border: 4px double #1aff00; /* Double line border for robustness */
+            filter: brightness(1.1); /* Slightly brighter overall terminal content */
+        }
+        #terminal-output {
+            flex-grow: 1;
+            overflow-y: auto;
+            white-space: pre-wrap; /* Preserve whitespace and wrap long lines */
+            word-break: break-all; /* Break long words */
+            font-size: 0.9em; /* Slightly smaller font to fit more content */
+            line-height: 1.4; /* More space between lines */
+            padding-right: 0.75rem; /* For scrollbar */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #1aff00 #1a1a1a; /* Custom scrollbar thumb and track */
+        }
+        #terminal-output::-webkit-scrollbar {
+            width: 10px; /* Wider scrollbar */
+        }
+        #terminal-output::-webkit-scrollbar-track {
+            background: #0a0a0a; /* Darker track */
+            border-radius: 10px;
+        }
+        #terminal-output::-webkit-scrollbar-thumb {
+            background-color: #1aff00;
+            border-radius: 10px;
+            border: 2px solid #000;
+        }
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            margin-top: 1.25rem; /* More space */
+            color: #1aff00;
+            font-size: 0.95em;
+            text-shadow: 0 0 4px rgba(26, 255, 0, 0.6); /* Sharper prompt glow */
+        }
+        #terminal-input {
+            background-color: transparent;
+            border: none;
+            outline: none;
+            color: #1aff00;
+            flex-grow: 1;
+            font-size: 0.95em; /* Input font matches prompt */
+            caret-color: #1aff00; /* Green blinking cursor */
+            padding-left: 0.5rem; /* More padding */
+        }
+        .boot-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #1aff00;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Align text to top */
+            align-items: flex-start; /* Align text to left */
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.2rem; /* Slightly smaller for log-like output */
+            white-space: pre;
+            overflow: hidden;
+            z-index: 1000;
+            transition: opacity 1.5s ease-out;
+            opacity: 1;
+            padding: 5% 10%; /* More generous padding for log feel */
+            box-sizing: border-box;
+            text-shadow: 0 0 5px rgba(26, 255, 0, 0.6); /* Text glow on boot screen */
+        }
+        .boot-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .fade-out {
+            animation: fadeOut 1.5s forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .loading-dots {
+            display: inline-block;
+            width: 1.5em;
+            text-align: left;
+        }
+
+        .loading-dots:after {
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: bottom;
+            -webkit-animation: ellipsis steps(4, end) 1s infinite;
+            animation: ellipsis steps(4, end) 1s infinite;
+            content: "\2026";
+            width: 0px;
+        }
+
+        @keyframes ellipsis {
+            to {
+                width: 1.25em;
+            }
+        }
+
+        @-webkit-keyframes ellipsis {
+            to {
+                width: 1.25em;
+            }
+        }
+
+        .progress-bar {
+            width: 80%;
+            max-width: 600px;
+            height: 25px;
+            background-color: #1a1a1a;
+            border: 2px solid #1aff00;
+            border-radius: 3px; /* Sharper corners */
+            overflow: hidden;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(26, 255, 0, 0.7); /* Progress bar glow */
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #1aff00;
+            transition: width 0.3s ease-out; /* Smoother progress */
+        }
+
+        .progress-text {
+            color: #1aff00;
+            text-align: center;
+            line-height: 25px;
+            font-size: 0.85em;
+            text-shadow: 0 0 5px rgba(26, 255, 0, 0.5);
+            margin-top: 5px;
+        }
+
+        .boot-title-section {
+            text-align: center;
+            width: 100%;
+            padding-top: 5vh; /* Push title down slightly for better centering after logs */
+            font-size: 1.8rem;
+            text-shadow: 0 0 15px rgba(26, 255, 0, 0.9);
+            animation: fadeIn 2s forwards;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="boot-screen" id="boot-screen">
+        <div id="boot-animation-content"></div>
+        <div class="flex flex-col items-center w-full">
+            <div class="progress-bar hidden" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text hidden" id="progressText">0%</div>
+        </div>
+        <div class="boot-title-section hidden" id="bootTitleSection"></div>
+    </div>
+
+    <div class="terminal-container hidden" id="main-terminal">
+        <div id="terminal-output" class="mb-2"></div>
+        <div class="prompt-line">
+            <span id="terminal-prompt" class="mr-1"></span>
+            <input type="text" id="terminal-input" autofocus>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration (provided by Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null; // Emulator's internal user state for prompt display
+        let firebaseUserId = null; // Firebase user ID for persistence
+        let isAuthReady = false; // Flag to ensure Firestore operations wait for auth
+
+        // In-memory file system. This will be overwritten by loaded data or saved.
+        let filesystem = {
+            'root': {
+                'home': {},
+                'bin': {
+                    '_files': {
+                        'echo': 'Built-in command: echo',
+                        'ls': 'Built-in command: ls',
+                        'cd': 'Built-in command: cd',
+                        'mkdir': 'Built-in command: mkdir',
+                        'touch': 'Built-in command: touch',
+                        'cat': 'Built-in command: cat',
+                        'whoami': 'Built-in command: whoami',
+                        'pwd': 'Built-in command: pwd',
+                        'ps': 'Built-in command: ps',
+                        'login': 'Built-in command: login',
+                        'logout': 'Built-in command: logout',
+                        'adduser': 'Built-in command: adduser',
+                        'deluser': 'Built-in command: deluser',
+                        'exit': 'Built-in command: exit',
+                        'man': 'Built-in command: man',
+                        'summarize': 'Built-in command: summarize',
+                        'status': 'Built-in command: display system status' // New command
+                    }
+                },
+                'dev': {},
+                'tmp': {}
+            }
+        };
+
+        let currentDirPath = ['root']; // Emulator's internal current directory
+        let emulatorUsers = {'admin': 'adminpass', 'user': 'password'}; // Emulator's internal user credentials
+        let processes = []; // pid, name, status
+        const hostname = 'RESTART-MIL'; // Military-grade hostname
+
+        const terminalOutput = document.getElementById('terminal-output');
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalPrompt = document.getElementById('terminal-prompt');
+        const bootScreen = document.getElementById('boot-screen');
+        const bootAnimationContent = document.getElementById('boot-animation-content');
+        const mainTerminal = document.getElementById('main-terminal');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const bootTitleSection = document.getElementById('bootTitleSection');
+
+        /**
+         * Prints text to the terminal output and auto-scrolls.
+         * @param {string} text The text to print.
+         */
+        function printToTerminal(text) {
+            terminalOutput.innerHTML += text + '\n';
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        /**
+         * Updates the terminal prompt based on the current user and directory.
+         */
+        function updatePrompt() {
+            let promptUser = currentUser ? currentUser : "guest";
+            let promptDir = '/' + currentDirPath.slice(1).join('/');
+            if (promptDir === '/') promptDir = '/';
+            terminalPrompt.textContent = `${promptUser}@${hostname}:${promptDir}#`; // Changed to # for root/admin
+        }
+
+        // --- Firebase Firestore Persistence ---
+
+        /**
+         * Saves the current filesystem state to Firestore.
+         * This function should be called after any modification to the filesystem.
+         */
+        async function saveFileSystem() {
+            if (!isAuthReady || !firebaseUserId) {
+                console.error("Firestore: Auth not ready or user ID not available. Cannot save.");
+                return;
+            }
+            try {
+                const fsDocRef = doc(db, `artifacts/${appId}/users/${firebaseUserId}/filesystem/user_fs`);
+                await setDoc(fsDocRef, { data: JSON.stringify(filesystem) }, { merge: true });
+            } catch (e) {
+                console.error("ERROR: FILESYSTEM WRITE FAILED: ", e);
+                printToTerminal("[CRITICAL] Filesystem write operation failed. Data loss possible.");
+            }
+        }
+
+        /**
+         * Loads the filesystem state from Firestore.
+         * If no data exists, initializes a default filesystem.
+         */
+        async function loadFileSystem() {
+            if (!isAuthReady || !firebaseUserId) {
+                console.error("Firestore: Auth not ready or user ID not available. Cannot load.");
+                return;
+            }
+            try {
+                const fsDocRef = doc(db, `artifacts/${appId}/users/${firebaseUserId}/filesystem/user_fs`);
+                const docSnap = await getDoc(fsDocRef);
+
+                if (docSnap.exists() && docSnap.data().data) {
+                    filesystem = JSON.parse(docSnap.data().data);
+                } else {
+                    filesystem = {
+                        'root': {
+                            'home': {},
+                            'bin': {
+                                '_files': {
+                                    'echo': 'Built-in command: echo',
+                                    'ls': 'Built-in command: ls',
+                                    'cd': 'Built-in command: cd',
+                                    'mkdir': 'Built-in command: mkdir',
+                                    'touch': 'Built-in command: touch',
+                                    'cat': 'Built-in command: cat',
+                                    'whoami': 'Built-in command: whoami',
+                                    'pwd': 'Built-in command: pwd',
+                                    'ps': 'Built-in command: ps',
+                                    'login': 'Built-in command: login',
+                                    'logout': 'Built-in command: logout',
+                                    'adduser': 'Built-in command: adduser',
+                                    'deluser': 'Built-in command: deluser',
+                                    'exit': 'Built-in command: exit',
+                                    'man': 'Built-in command: man',
+                                    'summarize': 'Built-in command: summarize',
+                                    'status': 'Built-in command: display system status'
+                                }
+                            },
+                            'dev': {},
+                            'tmp': {}
+                        }
+                    };
+                    if (!filesystem.root.home['admin']) {
+                        filesystem.root.home['admin'] = {};
+                    }
+                    if (!filesystem.root.home['user']) {
+                        filesystem.root.home['user'] = {};
+                    }
+                    await saveFileSystem();
+                }
+            } catch (e) {
+                console.error("ERROR: FILESYSTEM READ FAILED: ", e);
+                printToTerminal("[CRITICAL] Filesystem read operation failed. Using default state.");
+            }
+        }
+
+
+        // --- File System Helpers ---
+
+        function getCurrentDirectory() {
+            let currentLevel = filesystem;
+            for (const part of currentDirPath) {
+                if (!(part in currentLevel)) {
+                    return null;
+                }
+                currentLevel = currentLevel[part];
+            }
+            return currentLevel;
+        }
+
+        function resolvePath(path) {
+            let parts = [];
+            let currentLevel = filesystem;
+            let basePathParts = ['root'];
+
+            if (path.startsWith('/')) {
+                parts = path.split('/').filter(p => p !== '');
+            } else {
+                parts = path.split('/').filter(p => p !== '');
+                currentLevel = getCurrentDirectory();
+                basePathParts = [...currentDirPath];
+            }
+
+            let targetName = parts.length > 0 ? parts[parts.length - 1] : '';
+            let parentLevel = null;
+            let tempCurrentLevel = currentLevel;
+            let tempResolvedPathParts = [...basePathParts];
+
+            if (path === '/') {
+                return { node: filesystem['root'], parent: null, name: 'root' };
+            }
+            if (!path || (path === '.' && parts.length === 0)) {
+                const currentDirNode = getCurrentDirectory();
+                return { node: currentDirNode, parent: currentDirNode, name: currentDirPath[currentDirPath.length - 1] };
+            }
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+
+                if (part === '.') {
+                    continue;
+                } else if (part === '..') {
+                    if (tempResolvedPathParts.length > 1) {
+                        tempResolvedPathParts.pop();
+                        tempCurrentLevel = filesystem;
+                        for (const p of tempResolvedPathParts) {
+                            tempCurrentLevel = tempCurrentLevel[p];
+                        }
+                    }
+                    if (i === parts.length - 1) {
+                        parentLevel = tempCurrentLevel;
+                        targetName = tempResolvedPathParts[tempResolvedPathParts.length - 1] || 'root';
+                    }
+                    continue;
+                }
+
+                if (i < parts.length - 1) {
+                    if (!(part in tempCurrentLevel) || typeof tempCurrentLevel[part] !== 'object' || tempCurrentLevel[part]._files !== undefined) {
+                        return { node: null, parent: null, name: null };
+                    }
+                    tempCurrentLevel = tempCurrentLevel[part];
+                    tempResolvedPathParts.push(part);
+                } else {
+                    parentLevel = tempCurrentLevel;
+                    targetName = part;
+                }
+            }
+
+            if (targetName && parentLevel && (targetName in parentLevel || (parentLevel._files && targetName in parentLevel._files))) {
+                const node = (parentLevel._files && targetName in parentLevel._files) ? parentLevel._files[targetName] : parentLevel[targetName];
+                return { node: node, parent: parentLevel, name: targetName };
+            } else if (targetName === '' && path.endsWith('/')) {
+                return { node: parentLevel, parent: null, name: parentLevel ? tempResolvedPathParts[tempResolvedPathParts.length - 1] : null };
+            }
+            else {
+                return { node: null, parent: parentLevel, name: targetName };
+            }
+        }
+
+
+        // --- OS Commands ---
+
+        function lsCommand(path = '') {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+
+            let targetDir = null;
+            let displayPath = '';
+
+            if (path === '') {
+                targetDir = getCurrentDirectory();
+                displayPath = '/' + currentDirPath.slice(1).join('/');
+                if (displayPath === '/') displayPath = '/';
+            } else {
+                const { node: resolvedTarget } = resolvePath(path);
+                if (resolvedTarget === null || (typeof resolvedTarget === 'string' && !(resolvedTarget in (resolvePath(path).parent?._files || {}))) ) {
+                     printToTerminal(`ERROR: '${path}': NO SUCH FILE OR DIRECTORY.`);
+                     return;
+                }
+                if (typeof resolvedTarget === 'string') {
+                    printToTerminal(path.split('/').pop());
+                    return;
+                }
+                targetDir = resolvedTarget;
+                displayPath = path.startsWith('/') ? path : '/' + currentDirPath.slice(1).concat(path.split('/').filter(p => p !== '')).join('/');
+            }
+
+            if (!targetDir || typeof targetDir !== 'object') {
+                printToTerminal(`ERROR: '${path}': NOT A DIRECTORY.`);
+                return;
+            }
+
+            printToTerminal(`DIRECTORY LISTING FOR ${displayPath}:`);
+            let items = [];
+            for (const name in targetDir) {
+                if (name === '_files') {
+                    for (const fname in targetDir[name]) {
+                        items.push(fname);
+                    }
+                } else if (typeof targetDir[name] === 'object') {
+                    items.push(name + '/');
+                }
+            }
+            items.sort();
+            for (const item of items) {
+                printToTerminal(item);
+            }
+        }
+
+        function cdCommand(path) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+
+            if (path === '/') {
+                currentDirPath = ['root'];
+                updatePrompt();
+                return;
+            }
+
+            const { node: targetNode } = resolvePath(path);
+
+            if (targetNode === null) {
+                printToTerminal(`ERROR: ${path}: NO SUCH FILE OR DIRECTORY.`);
+                return;
+            }
+            if (typeof targetNode === 'string') {
+                printToTerminal(`ERROR: ${path}: NOT A DIRECTORY.`);
+                return;
+            }
+
+            const originalPath = [...currentDirPath];
+
+            let newPathParts;
+            if (path.startsWith('/')) {
+                newPathParts = ['root'];
+                const parts = path.split('/').filter(p => p !== '');
+                for (const part of parts) {
+                    if (part === '..') {
+                        if (newPathParts.length > 1) newPathParts.pop();
+                    } else if (part === '.') {
+                        // Do nothing
+                    } else {
+                        let tempLevel = filesystem;
+                        let validPathSoFar = true;
+                        for (const p of newPathParts) {
+                            if (!tempLevel[p] || typeof tempLevel[p] !== 'object' || tempLevel[p]._files !== undefined) {
+                                validPathSoFar = false;
+                                break;
+                            }
+                            tempLevel = tempLevel[p];
+                        }
+                        if (validPathSoFar && tempLevel[part] && typeof tempLevel[part] === 'object' && tempLevel[part]._files === undefined) {
+                            newPathParts.push(part);
+                        } else {
+                            printToTerminal(`ERROR: ${path}: PATH RESOLUTION FAILED.`);
+                            currentDirPath = originalPath;
+                            updatePrompt();
+                            return;
+                        }
+                    }
+                }
+            } else { // Relative path
+                newPathParts = [...currentDirPath];
+                const parts = path.split('/').filter(p => p !== '');
+                for (const part of parts) {
+                    if (part === '..') {
+                        if (newPathParts.length > 1) newPathParts.pop();
+                    } else if (part === '.') {
+                        // Do nothing
+                    } else {
+                        let tempLevel = filesystem;
+                        let validPathSoFar = true;
+                        for (const p of newPathParts) {
+                            if (!tempLevel[p] || typeof tempLevel[p] !== 'object' || tempLevel[p]._files !== undefined) {
+                                validPathSoFar = false;
+                                break;
+                            }
+                            tempLevel = tempLevel[p];
+                        }
+
+                        if (validPathSoFar && tempLevel[part] && typeof tempLevel[part] === 'object' && tempLevel[part]._files === undefined) {
+                            newPathParts.push(part);
+                        } else {
+                            printToTerminal(`ERROR: ${path}: PATH RESOLUTION FAILED.`);
+                            currentDirPath = originalPath;
+                            updatePrompt();
+                            return;
+                        }
+                    }
+                }
+            }
+            currentDirPath = newPathParts;
+            updatePrompt();
+        }
+
+
+        async function mkdirCommand(path) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+
+            if (currentUser !== 'admin' && path.startsWith('/')) {
+                const parts = path.split('/').filter(p => p !== '');
+                if (parts.length === 1) {
+                    printToTerminal("ERROR: PERMISSION DENIED: ONLY ROOT/ADMIN CAN CREATE TOP-LEVEL DIRECTORIES.");
+                    return;
+                }
+            }
+
+            const { node: targetNode, parent: parentDir, name: newName } = resolvePath(path);
+
+            if (parentDir === null) {
+                printToTerminal(`ERROR: FAILED TO CREATE DIRECTORY '${path}': PARENT PATH INVALID.`);
+                return;
+            }
+            if (targetNode !== null) {
+                printToTerminal(`ERROR: FAILED TO CREATE DIRECTORY '${path}': ENTRY ALREADY EXISTS.`);
+                return;
+            }
+            if (!newName) {
+                printToTerminal(`ERROR: FAILED TO CREATE DIRECTORY '${path}': INVALID NAME.`);
+                return;
+            }
+
+            parentDir[newName] = {};
+            printToTerminal(`DIRECTORY '${path}' CREATED.`);
+            await saveFileSystem();
+        }
+
+        async function touchCommand(path) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+            if (currentUser !== 'admin' && path.startsWith('/')) {
+                const parts = path.split('/').filter(p => p !== '');
+                if (parts.length === 1) {
+                    printToTerminal("ERROR: PERMISSION DENIED: ONLY ROOT/ADMIN CAN CREATE TOP-LEVEL FILES.");
+                    return;
+                }
+            }
+
+            const { node: targetNode, parent: parentDir, name: newName } = resolvePath(path);
+
+            if (parentDir === null) {
+                printToTerminal(`ERROR: FAILED TO CREATE FILE '${path}': PARENT PATH INVALID.`);
+                return;
+            }
+            if (targetNode !== null && typeof targetNode === 'object' && targetNode._files === undefined) {
+                printToTerminal(`ERROR: FAILED TO CREATE FILE '${path}': IS A DIRECTORY.`);
+                return;
+            }
+            if (targetNode !== null && typeof targetNode === 'string') {
+                printToTerminal(`WARNING: FILE '${path}' ALREADY EXISTS. TIMESTAMP UPDATE NOT IMPLEMENTED.`);
+                return;
+            }
+            if (!newName) {
+                printToTerminal(`ERROR: FAILED TO CREATE FILE '${path}': INVALID NAME.`);
+                return;
+            }
+
+            if (!parentDir._files) {
+                parentDir._files = {};
+            }
+            parentDir._files[newName] = "";
+            printToTerminal(`FILE '${path}' CREATED.`);
+            await saveFileSystem();
+        }
+
+        function catCommand(path) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+
+            const { node: targetNode } = resolvePath(path);
+
+            if (targetNode === null) {
+                printToTerminal(`ERROR: '${path}': NO SUCH FILE OR DIRECTORY.`);
+                return;
+            }
+            if (typeof targetNode === 'object') {
+                printToTerminal(`ERROR: '${path}': IS A DIRECTORY.`);
+                return;
+            }
+
+            printToTerminal(targetNode);
+        }
+
+        async function echoCommand(args) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+
+            if (args.includes('>')) {
+                const parts = args.split('>', 1);
+                const textToWrite = parts[0].trim();
+                const filePath = parts[1].trim();
+
+                const { node: targetNode, parent: parentDir, name: fileName } = resolvePath(filePath);
+
+                if (parentDir === null) {
+                    printToTerminal(`ERROR: FAILED TO WRITE TO '${filePath}': PARENT PATH INVALID.`);
+                    return;
+                }
+                if (targetNode !== null && typeof targetNode === 'object' && targetNode._files === undefined) {
+                    printToTerminal(`ERROR: FAILED TO WRITE TO '${filePath}': IS A DIRECTORY.`);
+                    return;
+                }
+                if (!fileName) {
+                    printToTerminal(`ERROR: FAILED TO WRITE TO '${filePath}': INVALID NAME.`);
+                    return;
+                }
+
+                if (!parentDir._files) {
+                    parentDir._files = {};
+                }
+                parentDir._files[fileName] = textToWrite;
+                printToTerminal(`OPERATION SUCCESS: CONTENT WRITTEN TO '${filePath}'.`);
+                await saveFileSystem();
+            } else {
+                printToTerminal(args);
+            }
+        }
+
+        function whoamiCommand() {
+            if (!currentUser) {
+                printToTerminal("UNKNOWN USER. PLEASE LOGIN.");
+                return;
+            }
+            printToTerminal(`AUTHENTICATED USER: ${currentUser}`);
+            if (currentUser === 'admin') {
+                printToTerminal("PRIVILEGE LEVEL: ROOT (SYSTEM ADMINISTRATOR)");
+            } else {
+                printToTerminal("PRIVILEGE LEVEL: STANDARD USER");
+            }
+            if (firebaseUserId) {
+                printToTerminal(`SESSION ID (Firebase UID): ${firebaseUserId.substring(0, 8)}...`);
+            }
+        }
+
+        function pwdCommand() {
+            let currentPath = '/' + currentDirPath.slice(1).join('/');
+            if (currentPath === '/') currentPath = '/';
+            printToTerminal(`CURRENT WORKING DIRECTORY: ${currentPath}`);
+        }
+
+        function addProcess(name, status = 'RUNNING') {
+            const pid = processes.length + 1;
+            processes.push({ pid, name, status });
+            return pid;
+        }
+
+        function removeProcessByName(name) {
+            processes = processes.filter(p => p.name !== name);
+        }
+
+        function psCommand() {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+            
+            if (processes.length === 0) {
+                printToTerminal("NO ACTIVE PROCESSES DETECTED.");
+                return;
+            }
+
+            printToTerminal("PROCESS TABLE:");
+            printToTerminal("PID   NAME                 STATUS");
+            for (const p of processes) {
+                printToTerminal(`${String(p.pid).padEnd(5)} ${String(p.name).padEnd(20)} ${p.status}`);
+            }
+        }
+
+        function loginCommand(usernameInput = '', passwordInput = '') {
+            if (currentUser) {
+                printToTerminal(`ERROR: USER ${currentUser} ALREADY AUTHENTICATED. LOGOUT REQUIRED.`);
+                return;
+            }
+
+            const username = usernameInput || prompt("USERNAME: ");
+            const password = passwordInput || prompt("PASSWORD: ");
+
+            if (username in emulatorUsers && emulatorUsers[username] === password) {
+                currentUser = username;
+                if (!filesystem.root.home[username]) {
+                    filesystem.root.home[username] = {};
+                }
+                cdCommand(`/root/home/${username}`);
+                printToTerminal(`AUTHENTICATION SUCCESSFUL. WELCOME, ${username.toUpperCase()}.`);
+                addProcess(`${username}-shell`, 'ACTIVE');
+                updatePrompt();
+            } else {
+                printToTerminal("AUTHENTICATION FAILED: INVALID CREDENTIALS. ALERTING SECURITY LOGS.");
+            }
+        }
+
+        function logoutCommand() {
+            if (!currentUser) {
+                printToTerminal("ERROR: NO ACTIVE USER SESSION.");
+                return;
+            }
+            printToTerminal(`USER ${currentUser.toUpperCase()} SESSION TERMINATED. GOODBYE.`);
+            const loggedOutUser = currentUser;
+            currentUser = null;
+            removeProcessByName(`${loggedOutUser}-shell`);
+            cdCommand('/');
+            updatePrompt();
+        }
+
+        async function adduserCommand(username, password) {
+            if (!currentUser || currentUser !== 'admin') {
+                printToTerminal("ERROR: PERMISSION DENIED. ROOT PRIVILEGES REQUIRED.");
+                return;
+            }
+            if (!username || !password) {
+                printToTerminal("USAGE: adduser <USERNAME> <PASSWORD>");
+                return;
+            }
+
+            if (username in emulatorUsers) {
+                printToTerminal(`ERROR: USER '${username}' ALREADY REGISTERED.`);
+            } else {
+                emulatorUsers[username] = password;
+                if (!filesystem.root.home[username]) {
+                    filesystem.root.home[username] = {};
+                    await saveFileSystem();
+                }
+                printToTerminal(`USER '${username}' CREATED SUCCESSFULLY.`);
+            }
+        }
+
+        async function deluserCommand(username) {
+            if (!currentUser || currentUser !== 'admin') {
+                printToTerminal("ERROR: PERMISSION DENIED. ROOT PRIVILEGES REQUIRED.");
+                return;
+            }
+            if (!username) {
+                printToTerminal("USAGE: deluser <USERNAME>");
+                return;
+            }
+            if (username === 'admin') {
+                printToTerminal("ERROR: SYSTEM ADMIN ACCOUNT CANNOT BE DELETED.");
+                return;
+            }
+            if (username === currentUser) {
+                printToTerminal("ERROR: CANNOT DELETE ACTIVE SESSION USER. LOGOUT FIRST.");
+                return;
+            }
+            if (!(username in emulatorUsers)) {
+                printToTerminal(`ERROR: USER '${username}' NOT FOUND.`);
+                return;
+            }
+
+            delete emulatorUsers[username];
+            if (filesystem.root.home[username]) {
+                delete filesystem.root.home[username];
+                await saveFileSystem();
+            }
+            printToTerminal(`USER '${username}' DELETED.`);
+        }
+
+        // New Command: status
+        function statusCommand() {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+            printToTerminal("--- SYSTEM STATUS REPORT ---");
+            printToTerminal(`HOSTNAME: ${hostname}`);
+            printToTerminal(`CURRENT USER: ${currentUser}`);
+            printToTerminal(`FIREBASE SESSION: ${firebaseUserId ? 'ACTIVE (' + firebaseUserId.substring(0, 8) + '...)' : 'INACTIVE/ANONYMOUS'}`);
+            printToTerminal(`SYSTEM UPTIME: ${Math.floor(performance.now() / 1000)} seconds`);
+            printToTerminal(`ACTIVE PROCESSES: ${processes.length}`);
+            printToTerminal("SECURITY PROTOCOL: ENGAGED");
+            printToTerminal("NETWORK: ONLINE");
+            printToTerminal("FILESYSTEM: OPERATIONAL (PERSISTENT)");
+            printToTerminal("--- END REPORT ---");
+        }
+
+
+        function exitCommand() {
+            printToTerminal("INITIATING SYSTEM SHUTDOWN PROTOCOL...");
+            terminalInput.disabled = true;
+            terminalInput.style.display = 'none';
+            terminalPrompt.style.display = 'none';
+            setTimeout(() => {
+                mainTerminal.classList.add('fade-out');
+                setTimeout(() => {
+                    document.body.innerHTML = '<div class="flex items-center justify-center h-screen text-green-500 text-2xl font-mono text-center">SYSTEM RE_start TERMINATED.<br> ALL DATA SECURED.</div>';
+                }, 1500);
+            }, 500);
+        }
+
+        // --- Gemini API Integration ---
+        async function callGeminiAPI(promptText) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: promptText }] }]
+            };
+
+            let retries = 0;
+            const maxRetries = 5;
+            let delay = 1000;
+
+            while (retries < maxRetries) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            retries++;
+                            delay *= 2;
+                            await new Promise(res => setTimeout(res, delay));
+                            continue;
+                        }
+                        throw new Error(`API ERROR: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return "AI RESPONSE ERROR: NO VALID CONTENT RECEIVED.";
+                    }
+                } catch (error) {
+                    console.error("FETCH ERROR:", error);
+                    return `AI OFFLINE: CONNECTION FAILED. ${error.message}`;
+                }
+            }
+            return "AI OFFLINE: REQUEST TIMED OUT AFTER MULTIPLE RETRIES.";
+        }
+
+        async function manCommand(topic) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+            if (!topic) {
+                printToTerminal("USAGE: man <TOPIC/COMMAND>");
+                printToTerminal("EXAMPLE: man ls");
+                printToTerminal("EXAMPLE: man SECURITY PROTOCOL");
+                return;
+            }
+
+            const loadingMessageDiv = document.createElement('div');
+            loadingMessageDiv.innerHTML = `[AI-ASSISTANT] PROCESSING REQUEST: '${topic}' <span class="loading-dots"></span>`;
+            terminalOutput.appendChild(loadingMessageDiv);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            terminalInput.disabled = true;
+
+            const prompt = `Explain the following term or command in the context of a highly secure, military-grade operating system emulator. Keep it concise, formal, and use precise, technical language suitable for a system administrator. If it's an OS concept, explain it generally. If it's a command, explain its purpose and basic usage.
+            Topic: ${topic}`;
+
+            try {
+                const response = await callGeminiAPI(prompt);
+                terminalOutput.removeChild(loadingMessageDiv);
+                printToTerminal(`\n--- DOCUMENTATION FOR ${topic.toUpperCase()} ---`);
+                printToTerminal(response.toUpperCase()); // Ensure response is also uppercase for military style
+                printToTerminal(`--- END OF DOCUMENTATION ---`);
+            } catch (error) {
+                terminalOutput.removeChild(loadingMessageDiv);
+                printToTerminal(`ERROR: DOCUMENTATION RETRIEVAL FAILED FOR '${topic}'. ${error.message}`);
+            } finally {
+                terminalInput.disabled = false;
+                terminalInput.focus();
+            }
+        }
+
+        async function summarizeCommand(filePath) {
+            if (!currentUser) {
+                printToTerminal("ERROR: ACCESS DENIED. LOGIN REQUIRED.");
+                return;
+            }
+            if (!filePath) {
+                printToTerminal("USAGE: summarize <FILE_PATH>");
+                printToTerminal("EXAMPLE: summarize /root/LOGS/access.log");
+                return;
+            }
+
+            const { node: targetNode } = resolvePath(filePath);
+
+            if (targetNode === null) {
+                printToTerminal(`ERROR: '${filePath}': NO SUCH FILE OR DIRECTORY.`);
+                return;
+            }
+            if (typeof targetNode === 'object') {
+                printToTerminal(`ERROR: '${filePath}': IS A DIRECTORY.`);
+                return;
+            }
+            if (targetNode.trim() === '') {
+                printToTerminal(`WARNING: FILE '${filePath}' IS EMPTY. NO CONTENT TO SUMMARIZE.`);
+                return;
+            }
+
+            const fileContent = targetNode;
+
+            const loadingMessageDiv = document.createElement('div');
+            loadingMessageDiv.innerHTML = `[AI-ASSISTANT] ANALYZING FILE CONTENT: '${filePath}' <span class="loading-dots"></span>`;
+            terminalOutput.appendChild(loadingMessageDiv);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            terminalInput.disabled = true;
+
+            const prompt = `Provide a concise, formal summary of the following system log or technical document content. Focus on critical information, events, or key takeaways.
+            Content to analyze:
+            "${fileContent}"`;
+
+            try {
+                const summary = await callGeminiAPI(prompt);
+                terminalOutput.removeChild(loadingMessageDiv);
+                printToTerminal(`\n--- SUMMARY OF ${filePath.toUpperCase()} ---`);
+                printToTerminal(summary.toUpperCase()); // Ensure response is also uppercase
+                printToTerminal(`--- END OF SUMMARY ---`);
+            } catch (error) {
+                terminalOutput.removeChild(loadingMessageDiv);
+                printToTerminal(`ERROR: SUMMARY GENERATION FAILED FOR '${filePath}'. ${error.message}`);
+            } finally {
+                terminalInput.disabled = false;
+                terminalInput.focus();
+            }
+        }
+
+
+        async function processCommand(commandLine) {
+            printToTerminal(`${terminalPrompt.textContent} ${commandLine}`);
+
+            const parts = commandLine.split(' ', 1);
+            const command = parts[0];
+            const args = parts[1] || '';
+
+            switch (command) {
+                case 'ls':
+                    lsCommand(args);
+                    break;
+                case 'cd':
+                    cdCommand(args);
+                    break;
+                case 'mkdir':
+                    await mkdirCommand(args);
+                    break;
+                case 'touch':
+                    await touchCommand(args);
+                    break;
+                case 'cat':
+                    catCommand(args);
+                    break;
+                case 'echo':
+                    await echoCommand(args);
+                    break;
+                case 'whoami':
+                    whoamiCommand();
+                    break;
+                case 'pwd':
+                    pwdCommand();
+                    break;
+                case 'login':
+                    loginCommand();
+                    break;
+                case 'logout':
+                    logoutCommand();
+                    break;
+                case 'adduser':
+                    const userArgs = args.split(' ', 1);
+                    if (userArgs.length === 2) {
+                        await adduserCommand(userArgs[0], userArgs[1]);
+                    } else {
+                        adduserCommand();
+                    }
+                    break;
+                case 'deluser':
+                    await deluserCommand(args);
+                    break;
+                case 'ps':
+                    psCommand();
+                    break;
+                case 'man':
+                    await manCommand(args);
+                    break;
+                case 'summarize':
+                    await summarizeCommand(args);
+                    break;
+                case 'status': // New command handler
+                    statusCommand();
+                    break;
+                case 'exit':
+                    exitCommand();
+                    break;
+                case 'help':
+                    printToTerminal("AVAILABLE COMMANDS: ls, cd, mkdir, touch, cat, echo, whoami, pwd, ps, login, logout, adduser, deluser, man, summarize, status, exit");
+                    break;
+                default:
+                    printToTerminal(`COMMAND NOT RECOGNIZED: '${command}'. TYPE 'help' FOR ASSISTANCE.`);
+                    break;
+            }
+            terminalInput.value = '';
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        terminalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                processCommand(terminalInput.value.trim());
+            }
+        });
+
+        // --- Military-Grade Boot Sequence ---
+        const reStartTitleBinary = [
+            "  01110  01110   00110   01110   01110   01110   01000  00110   01110",
+            "  01001  01001   01001   01001   01001   01000   01000  01001   01001",
+            "  01110  01110   01001   01110   01001   01110   01000  01001   01001",
+            "  01001  01001   01001   01001   01001   01000   01000  01001   01001",
+            "  01001  01001   01110   01001   01001   01000   01000  01110   01001"
+        ];
+
+        const bootMessages = [
+            "[BOOT] SYSTEM INITIALIZATION SEQUENCE ENGAGED...",
+            "[CHECK] VERIFYING KERNEL INTEGRITY. STATUS: OK.",
+            "[CHECK] SECURE BOOT MODULE VALIDATION. STATUS: SUCCESS.",
+            "[LOAD] ESSENTIAL DRIVERS AND PROTOCOLS. PROGRESS:",
+            "[TASK] FILESYSTEM MOUNTING: /DEV/FS0. STATUS: COMPLETE.",
+            "[TASK] NETWORK INTERFACING PROTOCOL ACTIVATED. IP: 10.0.0.1 (INTERNAL).",
+            "[SECURITY] INTRUSION DETECTION SYSTEM (IDS) ONLINE. STATUS: MONITORING.",
+            "[SECURITY] FIREWALL STATUS: ACTIVE - ALL INGRESS FILTERS ENGAGED.",
+            "[PROC] LAUNCHING CORE SERVICES. PID RANGE ALLOCATED.",
+            "[READY] RE_start OS: OPERATIONAL. ACCESS LIMITED TO AUTHORIZED PERSONNEL."
+        ];
+
+        async function displayMilitaryBootAnimation() {
+            bootAnimationContent.innerHTML = '';
+            progressBar.classList.add('hidden'); // Ensure hidden at start
+            progressText.classList.add('hidden'); // Ensure hidden at start
+            bootTitleSection.classList.add('hidden'); // Ensure hidden at start
+
+            let currentMessageIndex = 0;
+            const messageInterval = 350; // Faster messages for a snappier boot log
+
+            const showNextMessage = () => {
+                if (currentMessageIndex < bootMessages.length) {
+                    const message = bootMessages[currentMessageIndex];
+                    bootAnimationContent.innerHTML += message + '<br>';
+                    
+                    if (message.includes("PROGRESS:")) {
+                        progressBar.classList.remove('hidden');
+                        progressText.classList.remove('hidden');
+                        simulateProgressBar(0, 100, 10, () => {
+                            // Progress bar completes, continue with next message
+                            currentMessageIndex++;
+                            setTimeout(showNextMessage, messageInterval);
+                        });
+                        return; // Exit to let progress bar run
+                    }
+                    
+                    currentMessageIndex++;
+                    setTimeout(showNextMessage, messageInterval);
+                } else {
+                    // All messages displayed, now display title
+                    bootAnimationContent.innerHTML = ''; // Clear boot messages
+                    progressBar.classList.add('hidden');
+                    progressText.classList.add('hidden');
+                    bootTitleSection.classList.remove('hidden');
+
+                    let titleContent = '';
+                    reStartTitleBinary.forEach(line => {
+                        titleContent += line + '<br>';
+                    });
+                    titleContent += '<br><br>';
+                    titleContent += 'Visit: RE_start.org';
+                    bootTitleSection.innerHTML = titleContent;
+
+                    setTimeout(() => {
+                        bootScreen.classList.add('hidden');
+                        mainTerminal.classList.remove('hidden');
+                        mainTerminal.classList.add('flex');
+                        bootSystem();
+                        terminalInput.focus();
+                    }, 2800); // Hold final title screen for 2.8 seconds
+                }
+            };
+
+            showNextMessage();
+        }
+
+        function simulateProgressBar(current, target, steps, callback) {
+            let percentage = current;
+            const increment = (target - current) / steps;
+
+            const interval = setInterval(() => {
+                percentage += increment;
+                if (percentage >= target) {
+                    percentage = target;
+                    clearInterval(interval);
+                    callback();
+                }
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = `${Math.round(percentage)}%`;
+            }, 150); // Faster updates for progress bar
+        }
+
+        async function bootSystem() {
+            let initialSignInSuccessful = false;
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                initialSignInSuccessful = true;
+            } catch (error) {
+                console.error("FIREBASE AUTH ERROR:", error);
+                printToTerminal("[CRITICAL] AUTHENTICATION FAILED. PERSISTENCE DISABLED.");
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    firebaseUserId = user.uid;
+                    isAuthReady = true;
+                    printToTerminal(`[SYSTEM] AUTHENTICATED. SESSION ID: ${firebaseUserId.substring(0, 8)}...`);
+                    await loadFileSystem();
+                    loginCommand('admin', 'adminpass');
+                } else {
+                    firebaseUserId = null;
+                    isAuthReady = false;
+                    printToTerminal("[SYSTEM] ANONYMOUS SESSION. PERSISTENCE INACTIVE.");
+                    loginCommand('admin', 'adminpass');
+                }
+            });
+        }
+
+        window.onload = displayMilitaryBootAnimation;
+    </script>
+</body>
+</html>

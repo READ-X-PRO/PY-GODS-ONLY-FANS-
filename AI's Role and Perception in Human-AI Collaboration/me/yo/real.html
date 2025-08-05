@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D GOD Word</title>
+  <style>
+    body {
+      background: linear-gradient(120deg, #1a237e 0%, #ff9800 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .word-3d {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 7em;
+      font-weight: bold;
+      color: #ffd740;
+      letter-spacing: 0.1em;
+      text-shadow:
+        0 2px 0 #ff9800,
+        0 4px 0 #ff6f00,
+        0 6px 2px #1a237e,
+        2px 8px 8px #000a;
+      transform: perspective(400px) rotateX(20deg) rotateY(-10deg);
+      user-select: none;
+    }
+    .subtitle {
+      text-align: center;
+      color: #fff;
+      font-size: 2em;
+      margin-top: 24px;
+      text-shadow: 0 2px 8px #000a;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="word-3d">GOD</div>
+    <div class="subtitle">Shape Worlds. Guide Civilizations.</div>
+  </div>
+</body>
+</html>

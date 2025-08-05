@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playable Medieval FPS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #181824; font-family: 'Segoe UI', Arial, sans-serif; color: white; }
+        canvas { width: 100vw; height: 100vh; display: block; }
+        .hud { position: fixed; padding: 10px; color: white; font-family: Arial; }
+        #health { top: 20px; left: 20px; }
+        #mana { top: 50px; left: 20px; }
+        #info { position: absolute; top: 10px; width: 100%; text-align: center; color: white; font-family: Arial; pointer-events: none; }
+        .inventory {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: url('https://i.imgur.com/ZuXJQgr.png') center/cover;
+            padding: 30px;
+            border: 4px solid #654321;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 600px;
+            min-height: 400px;
+            color: #fff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .inventory h2 { color: #a84cff; text-align: center; }
+        .inventory-slots {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .slot {
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #654321;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .slot:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .combat-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .weapon-slot {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #8b4513;
+            background: rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .weapon-slot.active {
+            border-color: #ffd700;
+            transform: scale(1.1);
+        }
+        .damage-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #battle {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #2d0036 60%, #3a1c4a 100%);
+            color: #fff;
+            padding: 22px 32px;
+            border-radius: 16px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 4px 24px #000a;
+            z-index: 1000;
+            min-width: 320px;
+            text-align: center;
+            border: 2px solid #a84cff;
+            display: none;
+        }
+        #battle button {
+            margin: 10px 8px 0 8px;
+            padding: 8px 18px;
+            background: #a84cff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #battle button:hover { background: #d1aaff; color: #2d0036; }
+        #party {
+            position: fixed;
+            top: 90px;
+            left: 20px;
+            color: #fff;
+            background: rgba(30,30,40,0.85);
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 2px 12px #0008;
+        }
+        #party span { display: inline-block; margin-bottom: 4px; }
+        #party span[style*="cursor:pointer"] { text-decoration: underline; }
+        /* Start Menu Overlay */
+        #start-menu {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #181824 80%, #4A0072 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20000;
+        }
+        #start-menu h1 {
+            font-size: 2.8em;
+            color: #FFC107;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 24px #000a;
+        }
+        #start-menu .subtitle {
+            color: #a84cff;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        #start-menu .menu-btn {
+            padding: 16px 40px;
+            margin: 10px 0;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            background: #4A0072;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 2px 10px #0006;
+            font-weight: bold;
+        }
+        #start-menu .menu-btn:hover {
+            background: #a84cff;
+            color: #fff;
+            transform: scale(1.05);
+        }
+        #start-menu .menu-footer {
+            margin-top: 40px;
+            color: #ccc;
+            font-size: 0.95em;
+            opacity: 0.7;
+        }
+        /* Settings & Help Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #23223a;
+            color: #fff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px #000b;
+            z-index: 21000;
+            min-width: 320px;
+            max-width: 90vw;
+        }
+        .modal h2 { margin-top: 0; color: #FFC107; }
+        .modal button {
+            margin-top: 20px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            background: #4A0072;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .modal button:hover { background: #a84cff; }
+        /* God Game Demo Styles */
+        .power-btn {
+            display: block;
+            width: 100%;
+            margin: 12px 0;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #ff6f00, #ff8f00);
+            color: #fff;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .power-btn:hover {
+            background: linear-gradient(90deg, #ffd740, #ff6f00);
+            color: #222;
+        }
+        .world-state { margin: 18px 0; font-size: 1.1em; line-height: 1.6; }
+        .log-entry {
+            margin-bottom: 10px;
+            border-left: 3px solid #ffd740;
+            padding-left: 8px;
+            opacity: 0.92;
+        }
+        @media (max-width: 900px) {
+            #godgame-modal > div > section > div[style*="display:flex"] {
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 18px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="health" class="hud">Health: 100</div>
+    <div id="mana" class="hud">Mana: 100</div>
+    <div class="combat-bar">
+        <div class="weapon-slot" data-weapon="sword"></div>
+        <div class="weapon-slot" data-weapon="crossbow"></div>
+        <div class="weapon-slot" data-weapon="spell"></div>
+    </div>
+    <div class="inventory">
+        <h2>Royal Armory</h2>
+        <div class="inventory-slots"></div>
+    </div>
+    <div class="damage-effect"></div>
+    <!-- Start Menu Overlay -->
+    <div id="start-menu">
+        <h1>Medieval FPS</h1>
+        <div class="subtitle">Advanced Operations</div>
+        <button class="menu-btn" id="btn-newgame">New Game</button>
+        <button class="menu-btn" id="btn-continue">Continue</button>
+        <button class="menu-btn" id="btn-settings">Settings</button>
+        <button class="menu-btn" id="btn-help">Help</button>
+        <button class="menu-btn" id="btn-godgame">God Game Concept</button>
+        <div class="menu-footer">© 2025 Daniel Studios. Press <b>F5</b> to Save, <b>F9</b> to Load.</div>
+    </div>
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <h2>Settings</h2>
+        <label>
+            <span>Music Volume:</span>
+            <input type="range" min="0" max="1" step="0.01" id="music-volume" value="0.5">
+        </label>
+        <br><br>
+        <label>
+            <span>Graphics Quality:</span>
+            <select id="graphics-quality">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+        </label>
+        <br>
+        <button onclick="closeSettings()">Close</button>
+    </div>
+    <!-- Help Modal -->
+    <div class="modal" id="help-modal">
+        <h2>Help & Controls</h2>
+        <ul>
+            <li><b>WASD</b> or <b>Arrow Keys</b>: Move</li>
+            <li><b>Space</b>: Jump</li>
+            <li><b>1-4</b>: Switch Actions</li>
+            <li><b>I</b>: Inventory</li>
+            <li><b>Q</b>: Quest Log</li>
+            <li><b>Click</b>: Interact</li>
+            <li><b>F5</b>: Save &nbsp; <b>F9</b>: Load</li>
+        </ul>
+        <button onclick="closeHelp()">Close</button>
+    </div>
+    <!-- God Game Modal -->
+    <div class="modal" id="godgame-modal" style="max-width: 1100px; width: 90vw; padding: 0;">
+        <div style="max-height: 80vh; overflow-y: auto; padding: 36px;">
+            <h1 style="font-size:2.2em; color:#ffd740; text-align:center; margin-bottom:10px;">The God Game Concept</h1>
+            <div class="subtitle" style="color:#a84cff; text-align:center; margin-bottom:30px;">Genre, Examples, Design &amp; Demo</div>
+            <section>
+                <h2 style="color:#ffd740;">Define the God Game Genre</h2>
+                <p>
+                    God games are simulation games where players assume the role of a deity, wielding power to shape, guide, and influence a virtual world and its inhabitants. These games are defined by indirect control, world-building, and emergent gameplay, allowing players to experiment with creation, destruction, and everything in between.
+                </p>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Examples of Popular Titles</h2>
+                <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                    <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:16px;min-width:180px;flex:1 1 200px;box-shadow:0 2px 8px #0003;">
+                        <h3 style="color:#ff9800;">SimCity</h3>
+                        <p>Manage and grow a city, balancing resources, zoning, and citizen needs.</p>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:16px;min-width:180px;flex:1 1 200px;box-shadow:0 2px 8px #0003;">
+                        <h3 style="color:#ff9800;">Black &amp; White</h3>
+                        <p>Play as a god, guiding followers with miracles and moral choices, shaping your creature and world.</p>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:16px;min-width:180px;flex:1 1 200px;box-shadow:0 2px 8px #0003;">
+                        <h3 style="color:#ff9800;">Spore</h3>
+                        <p>Oversee the evolution of life from a single cell to a galactic civilization, influencing every stage of development.</p>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Why God Games Are So Fascinating</h2>
+                <ul>
+                    <li><strong>Power &amp; Control:</strong> Experience the thrill of shaping worlds and destinies.</li>
+                    <li><strong>Creativity:</strong> Experiment with creation, destruction, and the unexpected outcomes of your actions.</li>
+                    <li><strong>Psychological Appeal:</strong> Satisfy curiosity about leadership, morality, and the consequences of omnipotence.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Crafting Your God Game's Core Mechanics</h2>
+                <ul>
+                    <li><strong>World Simulation:</strong> Simulate resources, population growth, and environmental changes.</li>
+                    <li><strong>Player Agency:</strong> Let players shape landscapes, guide civilizations, and trigger events.</li>
+                    <li><strong>Deity Powers &amp; Abilities:</strong> Design unique powers, blessings, and miracles that define the player's divine role.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Designing Meaningful Interactions</h2>
+                <ul>
+                    <li><strong>Building Relationships:</strong> Enable alliances, communities, and conflict management with simulated beings.</li>
+                    <li><strong>Moral Choices &amp; Consequences:</strong> Present ethical dilemmas and let players face the impact of their decisions.</li>
+                    <li><strong>The Paradox of Control:</strong> Balance player agency with emergent, unpredictable world behavior.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">The Importance of Storytelling</h2>
+                <ul>
+                    <li><strong>Narratives Through Gameplay:</strong> Use mechanics to create compelling stories and drive the game arc.</li>
+                    <li><strong>Player Agency in Storytelling:</strong> Let player actions shape the world's history and create personalized narratives.</li>
+                    <li><strong>Emergent Storytelling:</strong> Encourage unexpected events and organic storylines for replayability and engagement.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Tips for Designing Your Own God Game</h2>
+                <ul>
+                    <li><strong>Start Simple &amp; Iterate:</strong> Build a basic foundation and expand as you refine your mechanics.</li>
+                    <li><strong>Embrace Constraints:</strong> Use limitations to inspire creativity and unique gameplay.</li>
+                    <li><strong>The Power of Feedback:</strong> Test your game and gather feedback to improve your design.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Try It Yourself: God Powers Demo</h2>
+                <div style="display:flex;justify-content:center;align-items:flex-start;gap:40px;flex-wrap:wrap;">
+                    <div style="background:rgba(30,30,60,0.85);border-radius:16px;padding:24px;min-width:220px;max-width:320px;">
+                        <h2 style="color:#ffd740;">God Powers</h2>
+                        <button class="power-btn" onclick="usePower('Create Life')">🌱 Create Life</button>
+                        <button class="power-btn" onclick="usePower('Rain')">💧 Rain</button>
+                        <button class="power-btn" onclick="usePower('Firestorm')">🔥 Firestorm</button>
+                        <button class="power-btn" onclick="usePower('Blessing')">✨ Blessing</button>
+                        <button class="power-btn" onclick="usePower('Earthquake')">🌎 Earthquake</button>
+                    </div>
+                    <div style="background:rgba(30,30,60,0.85);border-radius:16px;padding:24px;min-width:220px;max-width:320px;">
+                        <h2 style="color:#ffd740;">World State</h2>
+                        <div class="world-state" id="worldState">
+                            Loading...
+                        </div>
+                    </div>
+                    <div style="background:rgba(30,30,60,0.95);border-radius:16px;padding:24px;min-width:220px;max-width:320px;max-height:340px;overflow-y:auto;">
+                        <h2 style="color:#ffd740;">Event Log</h2>
+                        <div id="eventLog"></div>
+                    </div>
+                </div>
+            </section>
+            <div style="text-align:center; margin-top:30px;">
+                <button onclick="closeGodGame()" style="padding:10px 32px; border-radius:8px; background:#4A0072; color:#fff; border:none; font-size:1.1em; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+    <div id="battle"></div>
+    <div id="party"></div>
+    <div id="info"></div>
+    <script>
+    // --- Start Menu Logic ---
+    let gameStarted = false;
+    let animationPaused = true;
+    const startMenu = document.getElementById('start-menu');
+    const settingsModal = document.getElementById('settings-modal');
+    const helpModal = document.getElementById('help-modal');
+    document.getElementById('btn-newgame').onclick = () => {
+        startMenu.style.display = 'none';
+        animationPaused = false;
+        if (!gameStarted) { initGame(); gameStarted = true; }
+    };
+    document.getElementById('btn-continue').onclick = () => {
+        startMenu.style.display = 'none';
+        animationPaused = false;
+        if (!gameStarted) { initGame(); gameStarted = true; }
+        setTimeout(() => loadGame(), 500);
+    };
+    document.getElementById('btn-settings').onclick = () => { settingsModal.style.display = 'block'; };
+    document.getElementById('btn-help').onclick = () => { helpModal.style.display = 'block'; };
+    window.closeSettings = () => { settingsModal.style.display = 'none'; };
+    window.closeHelp = () => { helpModal.style.display = 'none'; };
+    function showMenu() {
+        startMenu.style.display = 'flex';
+        animationPaused = true;
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (startMenu.style.display === 'none') showMenu();
+            else startMenu.style.display = 'none', animationPaused = false;
+        }
+    });
+
+    // --- God Game Modal Logic ---
+    const godgameModal = document.getElementById('godgame-modal');
+    document.getElementById('btn-godgame').onclick = () => { godgameModal.style.display = 'block'; };
+    window.closeGodGame = () => { godgameModal.style.display = 'none'; };
+
+    // --- God Game Demo Logic ---
+    const world = {
+        population: 10,
+        water: 50,
+        fire: 0,
+        blessing: false,
+        stability: 100
+    };
+
+    function updateWorldState() {
+        const ws = document.getElementById('worldState');
+        if (!ws) return;
+        ws.innerHTML = `
+            <strong>Population:</strong> ${world.population}<br>
+            <strong>Water:</strong> ${world.water}<br>
+            <strong>Fire:</strong> ${world.fire}<br>
+            <strong>Blessing:</strong> ${world.blessing ? 'Active' : 'None'}<br>
+            <strong>Stability:</strong> ${world.stability}
+        `;
+    }
+
+    function logEvent(msg) {
+        const log = document.getElementById('eventLog');
+        if (!log) return;
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.textContent = msg;
+        log.prepend(entry);
+    }
+
+    window.usePower = function(power) {
+        switch(power) {
+            case 'Create Life':
+                world.population += 5;
+                logEvent('You created new life! Population increased.');
+                break;
+            case 'Rain':
+                world.water += 20;
+                if (world.fire > 0) {
+                    world.fire = Math.max(0, world.fire - 10);
+                    logEvent('Rain extinguished some fire!');
+                } else {
+                    logEvent('Rain nourished the land. Water increased.');
+                }
+                break;
+            case 'Firestorm':
+                world.fire += 20;
+                world.population = Math.max(0, world.population - 3);
+                logEvent('A firestorm rages! Population decreased, fire increased.');
+                break;
+            case 'Blessing':
+                world.blessing = true;
+                logEvent('You bestowed a blessing upon the world!');
+                break;
+            case 'Earthquake':
+                world.stability -= 30;
+                world.population = Math.max(0, world.population - 2);
+                logEvent('An earthquake shakes the land! Stability and population decreased.');
+                break;
+        }
+        // Blessing effect: next negative event is halved
+        if (world.blessing && (power === 'Firestorm' || power === 'Earthquake')) {
+            world.population += 2; // mitigate loss
+            world.stability += 15;
+            world.blessing = false;
+            logEvent('Blessing softened the disaster\'s impact!');
+        }
+        // Clamp values
+        world.water = Math.max(0, world.water);
+        world.fire = Math.max(0, world.fire);
+        world.stability = Math.max(0, Math.min(100, world.stability));
+        updateWorldState();
+    };
+
+    // Initialize God Game demo state when modal opens
+    document.getElementById('btn-godgame').addEventListener('click', () => {
+        updateWorldState();
+        document.getElementById('eventLog').innerHTML = '';
+        logEvent('World created. Awaiting your divine intervention...');
+    });
+
+    // === Basic Game Setup ===
+    let renderer, scene, camera, ambientLight, directionalLight, ground, player, vampire;
+    let animateId;
+    function initGame() {
+        if (renderer) return;
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 0);
+        scene.add(directionalLight);
+
+        // Load Assets
+        const textureLoader = new THREE.TextureLoader();
+
+        // Load Textures
+        const groundTexture = textureLoader.load('file:///C:/Users/Daniel/3D%20Objects/Ch.%2000/3D%20LIBARIES/texture/PNG/Green/texture_08.png');
+        groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+        groundTexture.repeat.set(20, 20);
+
+        // Create Ground
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshPhongMaterial({ map: groundTexture });
+        ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Create Player
+        player = new THREE.Group();
+        const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+        const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+        const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.add(playerMesh);
+        player.position.set(0, 1, 0);
+        scene.add(player);
+
+        // Add Simple Enemy (Vampire)
+        const vampireTexture = textureLoader.load('https://threejsfundamentals.org/threejs/resources/images/wall.jpg');
+        const vampireMaterial = new THREE.MeshPhongMaterial({ map: vampireTexture });
+        vampire = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), vampireMaterial);
+        vampire.position.set(5, 1, 5);
+        scene.add(vampire);
+
+        // Demon Tower
+        demonTower = new DemonTower(30);
+
+        // Interactivity
+        renderer.domElement.addEventListener('pointerdown', (event) => {
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const interactables = [vampire];
+            const intersects = raycaster.intersectObjects(interactables);
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                if (obj === vampire && vampireStats.isAlive) {
+                    showBattleUI();
+                }
+            }
+
+            // Tower click
+            const towerIntersects = raycaster.intersectObjects(demonTower.towerGroup.children);
+            if (towerIntersects.length > 0 && !demonTower.inTower) {
+                demonTower.enterTower();
+            }
+        });
+
+        renderer.domElement.addEventListener('pointermove', (event) => {
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const interactables = [vampire];
+            const intersects = raycaster.intersectObjects(interactables);
+            document.body.style.cursor = intersects.length > 0 ? 'pointer' : '';
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        showPartyHUD();
+        showStoryChapter(currentChapter);
+        animate();
+    }
+
+    // === RPG Webtoon Storyline & Characters ===
+    const storyline = [
+        { chapter: 1, title: "Prologue: The Prophecy", description: "The legend of the Chosen One is revealed." },
+        { chapter: 2, title: "A Village in Peril", description: "The hero’s hometown is attacked by shadow beasts." },
+        { chapter: 3, title: "First Steps", description: "Tutorial: basic movement, combat, and inventory." },
+        { chapter: 4, title: "The Lost Heirloom", description: "Retrieve a family relic from goblin caves." },
+        { chapter: 5, title: "Meeting the Mentor", description: "Guided by a mysterious mage." },
+        { chapter: 6, title: "Forest of Whispers", description: "Learn stealth and magic basics." },
+        { chapter: 7, title: "Bandit Ambush", description: "First boss fight; rescue a merchant." },
+        { chapter: 8, title: "The Ancient Ruins", description: "Solve puzzles to unlock hidden powers." },
+        { chapter: 9, title: "A Friend in Need", description: "Recruit the first party member." },
+        { chapter: 10, title: "Departure", description: "Leave the village, beginning the true journey." },
+        { chapter: 100, title: "Bonus: The Next Adventure", description: "Tease a sequel or spin-off." }
+    ];
+    for (let i = 11; i <= 99; i++) {
+        storyline.splice(i-1, 0, { chapter: i, title: `Chapter ${i}`, description: `Story event for chapter ${i}.` });
+    }
+
+    const characters = [
+        { name: "Alden", role: "Hero", description: "The chosen one destined to save Eldoria." },
+        { name: "Lyra", role: "Mage Mentor", description: "A wise mage who guides the hero." },
+        { name: "Garrick", role: "Warrior Companion", description: "A loyal friend and skilled swordsman." },
+        { name: "Selene", role: "Rogue", description: "A stealthy thief with a mysterious past." },
+        { name: "Vampire Lord", role: "Antagonist", description: "A powerful foe who commands the shadows." }
+    ];
+
+    let currentChapter = 1;
+    function showStoryChapter(chapterNum) {
+        const chapter = storyline.find(c => c.chapter === chapterNum);
+        if (!chapter) return;
+        let infoDiv = document.getElementById('info');
+        if (!infoDiv) {
+            infoDiv = document.createElement('div');
+            infoDiv.id = 'info';
+            document.body.appendChild(infoDiv);
+        }
+        infoDiv.innerHTML = `<h2>Chapter ${chapter.chapter}: ${chapter.title}</h2><p>${chapter.description}</p>`;
+    }
+    showStoryChapter(currentChapter);
+
+    let party = [characters[0], characters[2]]; // Alden and Garrick
+
+    function addToParty(characterName) {
+        const char = characters.find(c => c.name === characterName);
+        if (char && !party.includes(char)) {
+            party.push(char);
+            showPartyHUD();
+        }
+    }
+
+    function showPartyHUD() {
+        let partyDiv = document.getElementById('party');
+        if (!partyDiv) {
+            partyDiv = document.createElement('div');
+            partyDiv.id = 'party';
+            document.body.appendChild(partyDiv);
+        }
+        partyDiv.innerHTML = `<b>Party:</b><br>` + party.map((c, i) =>
+            `<span style="cursor:pointer;color:${i === 0 ? '#ffd700' : '#fff'}" onclick="switchActiveCharacter(${i})">${c.name}</span><br>`
+        ).join('');
+    }
+    window.switchActiveCharacter = function(idx) {
+        if (idx > 0 && idx < party.length) {
+            const temp = party[0];
+            party[0] = party[idx];
+            party[idx] = temp;
+            showPartyHUD();
+            showStoryChapter(currentChapter);
+        }
+    };
+    showPartyHUD();
+
+    // === Inventory System ===
+    class MedievalInventory {
+        constructor() {
+            this.items = [];
+            this.slots = 20;
+            this.initInventory();
+        }
+        initInventory() {
+            const container = document.querySelector('.inventory-slots');
+            for (let i = 0; i < this.slots; i++) {/* ... */}
+        }
+        addItem(item) {
+            if (this.items.length >= this.slots) return;
+            this.items.push(item);
+        }
+        updateSlot(index, item) {/* ... */}
+    }
+    const inventorySystem = new MedievalInventory();
+    inventorySystem.addItem({
+        name: 'Steel Sword',
+        icon: 'https://i.imgur.com/5X2Q9yP.png',
+        type: 'weapon',
+        damage: 35
+    });
+    inventorySystem.addItem({
+        name: 'Health Potion',
+        icon: 'https://i.imgur.com/8zJ3Z7y.png',
+        type: 'consumable',
+        effect: 'heal'
+    });
+
+    // === Battle & Physics Variables ===
+    let velocityY = 0;
+    const gravity = -0.01;
+    let isOnGround = true;
+
+    let playerStats = {
+        hp: 100,
+        maxHp: 100,
+        attack: 35,
+        defense: 10
+    };
+
+    let vampireStats = {
+        hp: 80,
+        maxHp: 80,
+    };
+
+    // === Battle UI ===
+    function showBattleUI() {/* ... */}
+    window.showBattleUI = showBattleUI;
+
+    function hideBattleUI() {/* ... */}
+    window.hideBattleUI = hideBattleUI;
+    </script>
+</body>
+</html>

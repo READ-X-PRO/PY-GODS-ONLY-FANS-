@@ -1,0 +1,30 @@
+{
+  "written_stories": [
+    {
+      "title": "Echoes of the Forgotten",
+      "author": "Eleanor Vance",
+      "summary": "A completed novel about a historian who discovers a secret society preserving lost knowledge.",
+      "status": "Completed",
+      "genre": "Historical Fiction",
+      "progress": 100
+    }
+  ],
+  "to_be_written": [
+    {
+      "title": "The Clockwork Oracle",
+      "author": "Julian Mechanicus",
+      "summary": "Steampunk adventure about an automaton that gains the ability to see possible futures.",
+      "status": "Outline",
+      "genre": "Steampunk",
+      "progress": 30,
+      "target_date": "2024-12-31"
+    }
+  ],
+  "poems": [
+    {
+      "title": "Whispers of Dawn",
+      "author": "M. L. Blackwood",
+      "content": "The morning light creeps slow,\nPainting shadows on the snow,\nWhispering secrets only dawn can know."
+    }
+  ]
+}

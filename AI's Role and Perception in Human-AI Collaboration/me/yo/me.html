@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Designing Your Own God - Game Mechanics Demo</title>
+  <style>
+    body {
+      background: linear-gradient(120deg, #1a237e 0%, #ff9800 100%);
+      color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 2.5em;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px #000a;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 40px;
+      gap: 60px;
+    }
+    .powers, .world, .log {
+      background: rgba(30,30,60,0.85);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 24px #0005;
+      min-width: 260px;
+      max-width: 320px;
+    }
+    .powers h2, .world h2, .log h2 {
+      margin-top: 0;
+      font-size: 1.3em;
+      letter-spacing: 1px;
+      color: #ffd740;
+    }
+    .power-btn {
+      display: block;
+      width: 100%;
+      margin: 12px 0;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #ff6f00, #ff8f00);
+      color: #fff;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .power-btn:hover {
+      background: linear-gradient(90deg, #ffd740, #ff6f00);
+      color: #222;
+    }
+    .world-state {
+      margin: 18px 0;
+      font-size: 1.1em;
+      line-height: 1.6;
+    }
+    .log {
+      max-height: 340px;
+      overflow-y: auto;
+      font-size: 0.98em;
+      background: rgba(30,30,60,0.95);
+    }
+    .log-entry {
+      margin-bottom: 10px;
+      border-left: 3px solid #ffd740;
+      padding-left: 8px;
+      opacity: 0.92;
+    }
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>DESIGNING YOUR OWN GOD</h1>
+  <div class="container">
+    <div class="powers">
+      <h2>God Powers</h2>
+      <button class="power-btn" onclick="usePower('Create Life')">🌱 Create Life</button>
+      <button class="power-btn" onclick="usePower('Rain')">💧 Rain</button>
+      <button class="power-btn" onclick="usePower('Firestorm')">🔥 Firestorm</button>
+      <button class="power-btn" onclick="usePower('Blessing')">✨ Blessing</button>
+      <button class="power-btn" onclick="usePower('Earthquake')">🌎 Earthquake</button>
+    </div>
+    <div class="world">
+      <h2>World State</h2>
+      <div class="world-state" id="worldState">
+        Loading...
+      </div>
+    </div>
+    <div class="log">
+      <h2>Event Log</h2>
+      <div id="eventLog"></div>
+    </div>
+  </div>
+  <script>
+    // Simple world state
+    const world = {
+      population: 10,
+      water: 50,
+      fire: 0,
+      blessing: false,
+      stability: 100
+    };
+
+    function updateWorldState() {
+      const ws = document.getElementById('worldState');
+      ws.innerHTML = `
+        <strong>Population:</strong> ${world.population}<br>
+        <strong>Water:</strong> ${world.water}<br>
+        <strong>Fire:</strong> ${world.fire}<br>
+        <strong>Blessing:</strong> ${world.blessing ? 'Active' : 'None'}<br>
+        <strong>Stability:</strong> ${world.stability}
+      `;
+    }
+
+    function logEvent(msg) {
+      const log = document.getElementById('eventLog');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = msg;
+      log.prepend(entry);
+    }
+
+    function usePower(power) {
+      switch(power) {
+        case 'Create Life':
+          world.population += 5;
+          logEvent('You created new life! Population increased.');
+          break;
+        case 'Rain':
+          world.water += 20;
+          if (world.fire > 0) {
+            world.fire = Math.max(0, world.fire - 10);
+            logEvent('Rain extinguished some fire!');
+          } else {
+            logEvent('Rain nourished the land. Water increased.');
+          }
+          break;
+        case 'Firestorm':
+          world.fire += 20;
+          world.population = Math.max(0, world.population - 3);
+          logEvent('A firestorm rages! Population decreased, fire increased.');
+          break;
+        case 'Blessing':
+          world.blessing = true;
+          logEvent('You bestowed a blessing upon the world!');
+          break;
+        case 'Earthquake':
+          world.stability -= 30;
+          world.population = Math.max(0, world.population - 2);
+          logEvent('An earthquake shakes the land! Stability and population decreased.');
+          break;
+      }
+      // Blessing effect: next negative event is halved
+      if (world.blessing && (power === 'Firestorm' || power === 'Earthquake')) {
+        world.population += 2; // mitigate loss
+        world.stability += 15;
+        world.blessing = false;
+        logEvent('Blessing softened the disaster\'s impact!');
+      }
+      // Clamp values
+      world.water = Math.max(0, world.water);
+      world.fire = Math.max(0, world.fire);
+      world.stability = Math.max(0, Math.min(100, world.stability));
+      updateWorldState();
+    }
+
+    // Initialize
+    updateWorldState();
+    logEvent('World created. Awaiting your divine intervention...');
+  </script>
+</body>
+</html>

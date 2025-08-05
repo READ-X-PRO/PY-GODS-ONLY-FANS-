@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solitude Softener</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lunarphase-js/dist/lunarphase.min.js"></script>
+    <style>
+        :root {
+            --deep-purple: #1a0636;
+            --dragon-violet: #4d1a7f;
+            --moon-glow: #e0d6f0;
+            --dragon-blood: #8a0303;
+            --soft-cyan: #87c5c4;
+            --stone-gray: #8a8d93;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, var(--deep-purple), #0c031a);
+            color: var(--moon-glow);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="white" opacity="0.2"/></svg>');
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(224, 214, 240, 0.1);
+            position: relative;
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--soft-cyan);
+        }
+
+        .logo::after {
+            content: "⊚";
+            margin-left: 10px;
+            color: var(--soft-cyan);
+            animation: pulse 3s infinite;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        nav a {
+            color: var(--moon-glow);
+            text-decoration: none;
+            font-size: 1.1rem;
+            position: relative;
+            padding-bottom: 5px;
+            transition: all 0.3s;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--soft-cyan);
+            transition: width 0.3s;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            position: relative;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--dragon-violet), transparent 70%);
+            border-radius: 50%;
+            opacity: 0.3;
+            z-index: -1;
+            animation: heroGlow 5s infinite alternate; /* New animation */
+        }
+
+        .motto {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.8rem;
+            font-weight: 300;
+            line-height: 1.4;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            text-shadow: 0 0 15px rgba(224, 214, 240, 0.5);
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 50px;
+            opacity: 0.8;
+            line-height: 1.7;
+        }
+
+        .btn {
+            background: transparent;
+            color: var(--moon-glow);
+            border: 1px solid var(--moon-glow);
+            padding: 12px 35px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: rgba(224, 214, 240, 0.1);
+            transition: width 0.3s;
+            z-index: -1;
+        }
+
+        .btn:hover::before {
+            width: 100%;
+        }
+
+        .btn:hover {
+            box-shadow: 0 0 15px var(--soft-cyan);
+        }
+
+        .section {
+            padding: 80px 20px;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: var(--soft-cyan);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .feature-card {
+            background: rgba(26, 6, 54, 0.5);
+            border: 1px solid rgba(224, 214, 240, 0.1);
+            border-radius: 10px;
+            padding: 30px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(224, 214, 240, 0.3);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--dragon-violet);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--soft-cyan);
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .feature-desc {
+            line-height: 1.7;
+            opacity: 0.8;
+        }
+
+        .moon-tracker {
+            background: rgba(26, 6, 54, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+            border: 1px solid rgba(224, 214, 240, 0.1);
+        }
+
+        .moon-display {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            background: #1c0c33;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(77, 26, 127, 0.5);
+            animation: moonRotate 15s linear infinite; /* New animation */
+        }
+
+        .moon-phase {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: var(--moon-glow);
+            box-shadow: 0 0 30px rgba(224, 214, 240, 0.7);
+            transition: background 1s ease-in-out; /* Smooth transition for moon phase changes */
+        }
+
+        .moon-info {
+            margin-top: 20px;
+        }
+
+        .moon-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .moon-countdown {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            color: var(--soft-cyan);
+        }
+
+        .crest-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .crest-visual {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+            height: 400px;
+            background: linear-gradient(to bottom, #2a124a, #0d041a);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(224, 214, 240, 0.1);
+        }
+
+        .brick-wall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(63deg, rgba(138, 3, 3, 0.1) 34%, transparent 35%),
+                linear-gradient(117deg, rgba(138, 3, 3, 0.1) 34%, transparent 35%);
+            background-size: 60px 40px;
+        }
+
+        .dragon-crest {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 300px;
+            background: linear-gradient(to bottom, #3a0a4a, #1a0636);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(138, 3, 3, 0.5);
+            animation: crestGlow 4s infinite alternate;
+        }
+
+        .crest-info {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .fragment-container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: rgba(26, 6, 54, 0.5);
+            border-radius: 10px;
+            padding: 40px;
+            border: 1px solid rgba(224, 214, 240, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fragment-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--soft-cyan);
+        }
+
+        .fragment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            align-items: center;
+            border-bottom: 1px solid rgba(224, 214, 240, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .fragment-id {
+            font-size: 1.1rem;
+            color: var(--soft-cyan);
+        }
+
+        .fragment-source {
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        .fragment-content {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            font-family: 'Cormorant Garamond', serif;
+            margin-bottom: 30px;
+        }
+
+        .fragment-footnote {
+            border-top: 1px solid rgba(224, 214, 240, 0.1);
+            padding-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .contribute-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(26, 6, 54, 0.3);
+            padding: 40px;
+            border-radius: 10px;
+            border: 1px solid rgba(224, 214, 240, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        textarea, select {
+            width: 100%;
+            padding: 15px;
+            background: rgba(26, 6, 54, 0.5);
+            border: 1px solid rgba(224, 214, 240, 0.2);
+            border-radius: 5px;
+            color: var(--moon-glow);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            resize: none;
+        }
+
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--soft-cyan);
+            box-shadow: 0 0 10px rgba(135, 197, 196, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(224, 214, 240, 0.1);
+            margin-top: 60px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .fragment-btn {
+            display: block;
+            margin: 30px auto;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        @keyframes crestGlow {
+            0% { box-shadow: 0 0 30px rgba(138, 3, 3, 0.5); }
+            100% { box-shadow: 0 0 50px rgba(138, 3, 3, 0.8); }
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px var(--soft-cyan); }
+            to { box-shadow: 0 0 30px var(--soft-cyan); }
+        }
+
+        /* New Animations */
+        @keyframes heroGlow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+        }
+
+        @keyframes moonRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .motto {
+                font-size: 2rem;
+            }
+
+            nav ul {
+                gap: 15px;
+            }
+
+            .section {
+                padding: 50px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">SOLITUDE SOFTENER</div>
+            <nav>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#moon">Moon Tracker</a></li>
+                    <li><a href="#crest">Dragon's Crest</a></li>
+                    <li><a href="#fragments">Fragments</a></li>
+                    <li><a href="#contribute">Contribute</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="motto">"In the kingdom of noise, we harvest silence—yet here we are, young soul."</div>
+            <div class="subtitle">An algorithm that finds and delivers micro-moments of accidental human warmth lost in the digital void. A sanctuary for the unheard whispers of connection across time and space.</div>
+            <button class="btn" id="receiveFragment">Receive a Fragment</button>
+        </section>
+
+        <section class="section" id="about">
+            <h2 class="section-title">How It Works</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-search"></i></div>
+                    <h3 class="feature-title">Deep Crawls</h3>
+                    <p class="feature-desc">Our PoetryBots scan forgotten forums, abandoned blogs, unsigned guestbooks, and decade-old social media threads to uncover lost moments of human connection.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-firefly"></i></div>
+                    <h3 class="feature-title">Digital Fireflies</h3>
+                    <p class="feature-desc">Using EmpathyLens™ NLP, we detect fleeting, unintentional moments where strangers almost connected but didn't—highlighting their quiet beauty.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-gift"></i></div>
+                    <h3 class="feature-title">Temporal Care Packages</h3>
+                    <p class="feature-desc">Fragments are delivered as Temporal Care Packages via browser plugins, midnight SMS, or randomly inserted into library print jobs.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="moon">
+            <h2 class="section-title">Crescent Moon Tracker</h2>
+            <div class="moon-tracker">
+                <div class="moon-display">
+                    <div class="moon-phase" id="moonPhase"></div>
+                </div>
+                <div class="moon-info">
+                    <h3>Current Moon Phase</h3>
+                    <p id="phaseName">Waxing Crescent</p>
+                    <p id="moonPercentage">18% illuminated</p>
+                    <div class="moon-countdown" id="countdown">Next crescent in: 3 days, 14 hours</div>
+                    <p>Fragments are delivered only during crescent moons - when beginnings emerge from darkness.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="crest">
+            <h2 class="section-title">Shadow Dragons Crest</h2>
+            <div class="crest-section">
+                <div class="crest-visual">
+                    <div class="brick-wall"></div>
+                    <div class="dragon-crest"></div>
+                </div>
+                <div class="crest-info">
+                    <h3>The Dragon's Archive</h3>
+                    <p>Your designated Shadow Dragons Crest is a living ledger where digital whispers meet physical space. Located at the Old City Library's west wing, it serves as a sacred portal between worlds.</p>
+                    <p>During crescent moons, fragments emerge as condensation poems on the keystone's surface - ephemeral as dragon scales.</p>
+                    <h3>Keeper's Ritual</h3>
+                    <ul style="margin: 20px; line-height: 2;">
+                        <li>Visit during crescent moon phases</li>
+                        <li>Press your palm against the crest for 5 seconds</li>
+                        <li>Whisper one secret per moon to feed the dragons</li>
+                        <li>Plant dragon's blood sedum around the base</li>
+                    </ul>
+                    <p>Each bloom extends the Softener's reach to new cities, creating a whispered network of keepers.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="fragments">
+            <h2 class="section-title">Fragments Archive</h2>
+            <div class="fragment-container" id="fragmentDisplay">
+                <div class="fragment-header">
+                    <div class="fragment-id">⊚ FRAGMENT #8812</div>
+                    <div class="fragment-source">Source: Drafts/ "City Moods" blog [decommissioned]</div>
+                </div>
+                <div class="fragment-content">
+                    "Third-floor elevator, 8:02 AM. You stood beside me holding wilting sunflowers. The doors closed and for three seconds—between the '2' and '3'—your sleeve brushed mine. The air tasted like honey. Where did your flowers bloom?"
+                </div>
+                <div class="fragment-footnote">
+                    • Last detected location: Toronto Public Library Printer #11 (2024-06-17)<br>
+                    • ⊙ 3,812 fragments currently drifting in the wild
+                </div>
+            </div>
+            <button class="btn fragment-btn" id="newFragment">Another Whisper</button>
+        </section>
+
+        <section class="section" id="contribute">
+            <h2 class="section-title">Plant a Fragment</h2>
+            <div class="contribute-form">
+                <div class="form-group">
+                    <label for="fragmentType">Fragment Type</label>
+                    <select id="fragmentType">
+                        <option value="place">Place (e.g., "suburban bus stop at dawn")</option>
+                        <option value="object">Object (e.g., "a mismatched sock")</option>
+                        <option value="emotion">Emotion (e.g., "sudden hope in an elevator")</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fragmentContent">Your Whisper</label>
+                    <textarea id="fragmentContent" rows="5" placeholder="Share a moment of accidental human warmth..."></textarea>
+                </div>
+                <button class="btn" id="submitFragment">Send to the Void</button>
+            </div>
+        </section>
+
+        <footer>
+            <p>SOLITUDE SOFTENER v1.0 "Crescent & Concrete" Edition</p>
+            <p>"Not all dragons hoard gold. Some guard the unspoken."</p>
+            <p>© 2025 The Whisper Protocol | All fragments anonymized and encrypted</p>
+        </footer>
+    </div>
+
+    <script>
+        // Fragment database
+        const fragments = [
+            {
+                id: 1042,
+                source: "User @Ghost_1042 (2016)",
+                content: "'Left a sonnet in a payphone receiver. Verse 3 was hope. The rest was salt. — May it dissolve someone's rust.'",
+                footnote: "This fragment now lives in 3 places: 1. Your stone 2. A café wall in Marrakesh 3. The dreams of whoever hung up that phone."
+            },
+            {
+                id: 1984,
+                source: "Geocaching forum thread from 2013",
+                content: "'Stumbled upon this bus stop behind the old textile mill. Bench is cracked, timetable faded to ghosts. Felt like if I sat down, I'd be waiting for a bus that comes once every decade. Left a blue pebble under the third plank — a ticket for the next dreamer.'",
+                footnote: "• Last detected location: Kyoto train station printer (2024-05-22) • ⊙ 12,447 fragments archived"
+            },
+            {
+                id: 711,
+                source: "User @Ghost_711 (2009)",
+                content: "'Left my fear in a hotel Bible. Room 407. May it bless the next liar.'",
+                footnote: "• Fragment delivered to 3 keepers • Dragon's blood sedum planted in Oslo and Lisbon"
+            },
+            {
+                id: 22,
+                source: "User @Ghost_22 (2010)",
+                content: "'Left maple seeds on a cemetery wall. Note: For the buried hearts still learning to fly.'",
+                footnote: "• Last detected location: Seattle Public Library • ⊙ Currently blooming in 7 Crest gardens"
+            },
+            {
+                id: 8812,
+                source: "Drafts/ \"City Moods\" blog [decommissioned]",
+                content: "\"Third-floor elevator, 8:02 AM. You stood beside me holding wilting sunflowers. The doors closed and for three seconds—between the '2' and '3'—your sleeve brushed mine. The air tasted like honey. Where did your flowers bloom?\"",
+                footnote: "• Last detected location: Toronto Public Library Printer #11 (2024-06-17)<br>• ⊙ 3,812 fragments currently drifting in the wild"
+            }
+        ];
+
+        let lastFragmentIndex = -1; // To prevent immediate repetition
+
+        // DOM elements
+        const receiveFragmentBtn = document.getElementById('receiveFragment');
+        const newFragmentBtn = document.getElementById('newFragment');
+        const fragmentDisplay = document.getElementById('fragmentDisplay');
+        const fragmentContentElem = fragmentDisplay.querySelector('.fragment-content');
+        const fragmentIdElem = fragmentDisplay.querySelector('.fragment-id');
+        const fragmentSourceElem = fragmentDisplay.querySelector('.fragment-source');
+        const fragmentFootnoteElem = fragmentDisplay.querySelector('.fragment-footnote');
+        const moonPhaseElem = document.getElementById('moonPhase');
+        const phaseNameElem = document.getElementById('phaseName');
+        const moonPercentageElem = document.getElementById('moonPercentage');
+        const countdownElem = document.getElementById('countdown');
+        const submitFragmentBtn = document.getElementById('submitFragment');
+        const navLinks = document.querySelectorAll('nav a');
+
+
+        // Update moon display - conceptual for animation, relies on lunarphase-js for actual data
+        function updateMoonDisplay() {
+            const now = new Date();
+            // In a real scenario, lunarphase.getPhase(now) would return an object with name and illumination
+            // For demonstration, we'll simulate some values
+            const simulatedPhases = [
+                { name: "New Moon", illumination: 0.05, daysToCrescent: 2 },
+                { name: "Waxing Crescent", illumination: 0.20, daysToCrescent: 5 },
+                { name: "First Quarter", illumination: 0.50, daysToCrescent: 7 },
+                { name: "Waxing Gibbous", illumination: 0.75, daysToCrescent: 10 },
+                { name: "Full Moon", illumination: 1.00, daysToCrescent: 14 },
+                { name: "Waning Gibbous", illumination: 0.70, daysToCrescent: 17 },
+                { name: "Last Quarter", illumination: 0.50, daysToCrescent: 21 },
+                { name: "Waning Crescent", illumination: 0.15, daysToCrescent: 26 }
+            ];
+            const currentHour = now.getHours();
+            const simulatedIndex = Math.floor((currentHour / 24) * simulatedPhases.length);
+            const phase = simulatedPhases[simulatedIndex % simulatedPhases.length]; // Cycle through phases
+
+            phaseNameElem.textContent = phase.name;
+            moonPercentageElem.textContent = `${Math.round(phase.illumination * 100)}% illuminated`;
+
+            // Create crescent moon effect based on illumination
+            const illumination = phase.illumination;
+            let gradient = '';
+
+            // Simple approximation for crescent effect based on illumination
+            // More complex logic would be needed for accurate crescent shape
+            if (illumination < 0.5) { // Waxing to First Quarter
+                gradient = `radial-gradient(circle at 30% 50%, var(--moon-glow) ${illumination * 100}%, transparent ${illumination * 100 + 10}%),
+                            radial-gradient(circle, #2a124a 100%, transparent 100%)`;
+            } else { // Waning to Last Quarter
+                gradient = `radial-gradient(circle at 70% 50%, var(--moon-glow) ${illumination * 100}%, transparent ${illumination * 100 + 10}%),
+                            radial-gradient(circle, #2a124a 100%, transparent 100%)`;
+            }
+
+            moonPhaseElem.style.background = gradient;
+            moonPhaseElem.style.boxShadow = `0 0 ${30 * illumination}px rgba(224, 214, 240, ${0.5 + illumination * 0.5})`;
+
+
+            // Calculate next crescent moon (simplified and conceptual)
+            const daysToCrescent = phase.daysToCrescent; // Using simulated value
+            countdownElem.textContent = `Next crescent in: ${daysToCrescent} days`;
+        }
+
+
+        // Display a random fragment
+        function displayRandomFragment() {
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * fragments.length);
+            } while (randomIndex === lastFragmentIndex && fragments.length > 1); // Ensure it's not the same as last one if more than 1 fragment
+            
+            const fragment = fragments[randomIndex];
+            lastFragmentIndex = randomIndex;
+            
+            fragmentIdElem.textContent = `⊚ FRAGMENT #${fragment.id}`;
+            fragmentSourceElem.textContent = `Source: ${fragment.source}`;
+            fragmentContentElem.textContent = fragment.content;
+            fragmentFootnoteElem.innerHTML = fragment.footnote; // Use innerHTML for potential <br> tag
+            
+            // Add glow effect to indicate new fragment
+            fragmentDisplay.classList.add('glow');
+            setTimeout(() => {
+                fragmentDisplay.classList.remove('glow');
+            }, 2000);
+        }
+
+        // Submit new fragment
+        function submitFragment() {
+            const fragmentType = document.getElementById('fragmentType').value;
+            const content = document.getElementById('fragmentContent').value;
+            
+            if (!content.trim()) {
+                alert("Please share your whisper...");
+                return;
+            }
+            
+            // Create a simple representation of the fragment
+            const newFragment = {
+                id: Math.floor(Math.random() * 9000) + 1000,
+                source: `Newly planted fragment (${fragmentType})`,
+                content: `"${content}"`,
+                footnote: `• Planted during ${fragmentType} • Awaiting dragon's blessing`
+            };
+            
+            // Add to fragments array
+            fragments.push(newFragment);
+            
+            // Display the new fragment
+            fragmentIdElem.textContent = `⊚ FRAGMENT #${newFragment.id}`;
+            fragmentSourceElem.textContent = `Source: ${newFragment.source}`;
+            fragmentContentElem.textContent = newFragment.content;
+            fragmentFootnoteElem.innerHTML = newFragment.footnote;
+            
+            // Scroll to fragment display
+            document.getElementById('fragments').scrollIntoView({ behavior: 'smooth' });
+            
+            // Add glow effect
+            fragmentDisplay.classList.add('glow');
+            setTimeout(() => {
+                fragmentDisplay.classList.remove('glow');
+            }, 2000);
+            
+            // Reset form
+            document.getElementById('fragmentContent').value = '';
+            
+            alert("Your whisper has been planted in the digital garden. May it bloom during the next crescent moon.");
+        }
+
+        // Smooth scroll for navigation links
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+
+        // Event listeners
+        receiveFragmentBtn.addEventListener('click', displayRandomFragment);
+        newFragmentBtn.addEventListener('click', displayRandomFragment);
+        submitFragmentBtn.addEventListener('click', submitFragment);
+
+        // Initialize
+        updateMoonDisplay();
+        displayRandomFragment();
+        
+        // Update moon every 5 seconds for visual demo purposes (in real app, every hour or day)
+        setInterval(updateMoonDisplay, 5000);
+    </script>
+</body>
+</html>

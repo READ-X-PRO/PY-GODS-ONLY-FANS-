@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playable Medieval FPS</title>
+    <link rel="icon" href="https://i.imgur.com/ZuXJQgr.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #181824;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            user-select: none;
+            /* Hide default cursor */
+
+        }
+
+        canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            /* Ensure canvas is behind other elements */
+
+        }
+
+        .hud {
+            position: fixed;
+            padding: 10px;
+            color: white;
+            font-family: Arial;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            font-size: 1.2em;
+            transition: all 0.2s ease-in-out;
+            pointer-events: none;
+            /* Prevent interaction */
+            user-select: none;
+            /* Prevent text selection */
+            cursor: default;
+            /* Use default cursor for HUD elements */
+            backdrop-filter: blur(5px);
+            /* Add a subtle blur effect */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid #a84cff;
+            /* Add a border for better visibility */
+            padding: 12px 16px;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: transform 0.2s, opacity 0.2s;
+            opacity: 0.9;
+            /* Slightly transparent for a modern look */
+            transform: translateY(-10px);
+            /* Slightly raised effect */
+
+        }
+
+        #health {
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 0, 0, 0.8);
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            transition: background 0.3s, transform 0.3s;
+            transform: translateY(-10px);
+
+        }
+
+        #mana {
+            top: 50px;
+            left: 20px;
+            background: rgba(0, 0, 255, 0.8);
+            border: 2px solid #0000ff;
+            box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+            transition: background 0.3s, transform 0.3s;
+            transform: translateY(-10px);
+
+        }
+
+        #info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 30, 40, 0.85);
+            color: #fff;
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px #0008;
+            z-index: 1000;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 1.1em;
+            max-width: 300px;
+        }
+
+        .inventory {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: url('https://i.imgur.com/ZuXJQgr.png') center/cover;
+            padding: 30px;
+            border: 4px solid #654321;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 600px;
+            min-height: 400px;
+            color: #fff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            z-index: 1000;
+
+        }
+
+        .inventory h2 {
+            color: #a84cff;
+            text-align: center;
+        }
+
+        .inventory-slots {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .slot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #a84cff;
+            border-radius: 8px;
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #654321;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .slot:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+
+        }
+
+        .slot img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .combat-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .weapon-slot {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #8b4513;
+            background: rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+
+        }
+
+        .weapon-slot.active {
+            background: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            border-color: #ffd700;
+            transform: scale(1.1);
+
+        }
+
+        .damage-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            background: rgba(255, 0, 0, 0.5);
+
+        }
+
+        #battle {
+
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #2d0036 60%, #3a1c4a 100%);
+
+            color: #fff;
+            padding: 22px 32px;
+            border-radius: 16px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 4px 24px #000a;
+            z-index: 1000;
+            min-width: 320px;
+            text-align: center;
+            border: 2px solid #a84cff;
+            display: none;
+
+        }
+
+        #battle button {
+            margin: 10px 8px 0 8px;
+            padding: 8px 18px;
+            background: #a84cff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+        }
+
+        #battle button:hover {
+            background: #d1aaff;
+            color: #2d0036;
+            transform: scale(1.05);
+
+        }
+
+        #party {
+            position: fixed;
+            top: 90px;
+            left: 20px;
+            color: #fff;
+            background: rgba(30, 30, 40, 0.85);
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            box-shadow: 0 2px 12px #0008;
+            z-index: 1000;
+            max-width: 300px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 1.1em;
+
+        }
+
+        #party span {
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+
+        #party span[style*="cursor:pointer"] {
+            text-decoration: underline;
+        }
+
+        /* Start Menu Overlay */
+        #start-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #181824 80%, #4A0072 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20000;
+        }
+
+        #start-menu h1 {
+            font-size: 2.8em;
+            color: #FFC107;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 24px #000a;
+        }
+
+        #start-menu .subtitle {
+            color: #a84cff;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        #start-menu .menu-btn {
+            padding: 16px 40px;
+            margin: 10px 0;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            background: #4A0072;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 2px 10px #0006;
+            font-weight: bold;
+        }
+
+        #start-menu .menu-btn:hover {
+            background: #a84cff;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        #start-menu .menu-footer {
+            margin-top: 40px;
+            color: #ccc;
+            font-size: 0.95em;
+            opacity: 0.7;
+        }
+
+        /* Settings & Help Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #23223a;
+            color: #fff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px #000b;
+            z-index: 21000;
+            min-width: 320px;
+            max-width: 90vw;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: #FFC107;
+        }
+
+        .modal button {
+            margin-top: 20px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            background: #4A0072;
+            color: #fff;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .modal button:hover {
+            background: #a84cff;
+        }
+
+        .power-btn {
+            display: block;
+            width: 100%;
+            margin: 12px 0;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #ff6f00, #ff8f00);
+            color: #fff;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .power-btn:hover {
+            background: linear-gradient(90deg, #ffd740, #ff6f00);
+            color: #222;
+        }
+
+        .world-state {
+            margin: 18px 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            border-left: 3px solid #ffd740;
+            padding-left: 8px;
+            opacity: 0.92;
+        }
+
+        @media (max-width: 900px) {
+            #godgame-modal>div>section>div[style*="display:flex"] {
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 18px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="health" class="hud">Health: 100</div>
+    <div id="mana" class="hud">Mana: 100</div>
+    <div class="combat-bar">
+        <div class="weapon-slot" data-weapon="sword"></div>
+        <div class="weapon-slot" data-weapon="crossbow"></div>
+        <div class="weapon-slot" data-weapon="spell"></div>
+    </div>
+    <div class="inventory">
+        <h2>Royal Armory</h2>
+        <div class="inventory-slots"></div>
+    </div>
+    <div class="damage-effect"></div>
+    <!-- Start Menu Overlay -->
+    <div id="start-menu">
+        <h1>Medieval FPS</h1>
+        <div class="subtitle">Advanced Operations</div>
+        <button class="menu-btn" id="btn-newgame">New Game</button>
+        <button class="menu-btn" id="btn-continue">Continue</button>
+        <button class="menu-btn" id="btn-settings">Settings</button>
+        <button class="menu-btn" id="btn-help">Help</button>
+        <button class="menu-btn" id="btn-godgame">God Game Concept</button>
+        <div class="menu-footer">© 2025 Daniel Studios. Press <b>F5</b> to Save, <b>F9</b> to Load.</div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <h2>Settings</h2>
+        <label>
+            <span>Music Volume:</span>
+            <input type="range" min="0" max="1" step="0.01" id="music-volume" value="0.5">
+        </label>
+        <br><br>
+        <label>
+            <span>Graphics Quality:</span>
+            <select id="graphics-quality">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+        </label>
+        <br>
+        <button onclick="closeSettings()">Close</button>
+    </div>
+    <!-- Help Modal -->
+    <div class="modal" id="help-modal">
+
+        <h2>Help & Controls</h2>
+        <ul>
+            <li><b>WASD</b> or <b>Arrow Keys</b>: Move</li>
+            <li><b>Space</b>: Jump</li>
+            <li><b>1-4</b>: Switch Actions</li>
+            <li><b>I</b>: Inventory</li>
+            <li><b>Q</b>: Quest Log</li>
+            <li><b>Click</b>: Interact</li>
+            <li><b>F5</b>: Save &nbsp; <b>F9</b>: Load</li>
+        </ul>
+        <button onclick="closeHelp()">Close</button>
+    </div>
+    <div id="battle"></div>
+    <div id="party"></div>
+    <div id="info">
+        <h2>Game Info</h2>
+        <p>Press <b>F1</b> to toggle this info panel.</p>
+        <p>Click the button below to expand for more details.</p>
+        <button class="info-toggle-btn" id="infoToggleBtn" title="Show Info">☰</button>
+        <div id="info-content"></div>
+    </div>
+
+    <!-- Add this modal after the Help Modal -->
+    <div class="modal" id="godgame-modal" style="max-width: 1100px; width: 90vw; padding: 0;">
+        <div style="max-height: 80vh; overflow-y: auto; padding: 36px;">
+            <h1 style="font-size:2.2em; color:#ffd740; text-align:center; margin-bottom:10px;">The God Game Concept</h1>
+            <div class="subtitle" style="color:#a84cff; text-align:center; margin-bottom:30px;">Genre, Examples, Design
+                &amp; Demo</div>
+            <section>
+                <h2 style="color:#ffd740;">Define the God Game Genre</h2>
+                <p>
+                    God games are simulation games where players assume the role of a deity, wielding power to shape,
+                    guide, and influence a virtual world and its inhabitants. These games are defined by indirect
+                    control, world-building, and emergent gameplay, allowing players to experiment with creation,
+                    destruction, and everything in between.
+                </p>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Examples of Popular Titles</h2>
+                <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                    <div
+                        style="background:rgba(255,255,255,0.08);border-radius:10px;padding:16px;min-width:180px;flex:1 1 200px;box-shadow:0 2px 8px #0003;">
+                        <h3 style="color:#ff9800;">SimCity</h3>
+                        <p>Manage and grow a city, balancing resources, zoning, and citizen needs.</p>
+                    </div>
+                    <div
+                        style="background:rgba(255,255,255,0.08);border-radius:10px;padding:16px;min-width:180px;flex:1 1 200px;box-shadow:0 2px 8px #0003;">
+                        <h3 style="color:#ff9800;">Black &amp; White</h3>
+                        <p>Play as a god, guiding followers with miracles and moral choices, shaping your creature and
+                            world.</p>
+                    </div>
+                    <div
+                        style="background:rgba(255,255,255,0.08);border-radius:10px;padding:16px;min-width:180px;flex:1 1 200px;box-shadow:0 2px 8px #0003;">
+                        <h3 style="color:#ff9800;">Spore</h3>
+                        <p>Oversee the evolution of life from a single cell to a galactic civilization, influencing
+                            every stage of development.</p>
+                    </div>
+                </div>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Why God Games Are So Fascinating</h2>
+                <ul>
+                    <li><strong>Power &amp; Control:</strong> Experience the thrill of shaping worlds and destinies.
+                    </li>
+                    <li><strong>Creativity:</strong> Experiment with creation, destruction, and the unexpected outcomes
+                        of your actions.</li>
+                    <li><strong>Psychological Appeal:</strong> Satisfy curiosity about leadership, morality, and the
+                        consequences of omnipotence.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Crafting Your God Game's Core Mechanics</h2>
+                <ul>
+                    <li><strong>World Simulation:</strong> Simulate resources, population growth, and environmental
+                        changes.</li>
+                    <li><strong>Player Agency:</strong> Let players shape landscapes, guide civilizations, and trigger
+                        events.</li>
+                    <li><strong>Deity Powers &amp; Abilities:</strong> Design unique powers, blessings, and miracles
+                        that define the player's divine role.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Designing Meaningful Interactions</h2>
+                <ul>
+                    <li><strong>Building Relationships:</strong> Enable alliances, communities, and conflict management
+                        with simulated beings.</li>
+                    <li><strong>Moral Choices &amp; Consequences:</strong> Present ethical dilemmas and let players face
+                        the impact of their decisions.</li>
+                    <li><strong>The Paradox of Control:</strong> Balance player agency with emergent, unpredictable
+                        world behavior.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">The Importance of Storytelling</h2>
+                <ul>
+                    <li><strong>Narratives Through Gameplay:</strong> Use mechanics to create compelling stories and
+                        drive the game arc.</li>
+                    <li><strong>Player Agency in Storytelling:</strong> Let player actions shape the world's history and
+                        create personalized narratives.</li>
+                    <li><strong>Emergent Storytelling:</strong> Encourage unexpected events and organic storylines for
+                        replayability and engagement.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Tips for Designing Your Own God Game</h2>
+                <ul>
+                    <li><strong>Start Simple &amp; Iterate:</strong> Build a basic foundation and expand as you refine
+                        your mechanics.</li>
+                    <li><strong>Embrace Constraints:</strong> Use limitations to inspire creativity and unique gameplay.
+                    </li>
+                    <li><strong>The Power of Feedback:</strong> Test your game and gather feedback to improve your
+                        design.</li>
+                </ul>
+            </section>
+            <section>
+                <h2 style="color:#ffd740;">Try It Yourself: God Powers Demo</h2>
+                <div style="display:flex;justify-content:center;align-items:flex-start;gap:40px;flex-wrap:wrap;">
+                    <div
+                        style="background:rgba(30,30,60,0.85);border-radius:16px;padding:24px;min-width:220px;max-width:320px;">
+                        <h2 style="color:#ffd740;">God Powers</h2>
+                        <button class="power-btn" onclick="usePower('Create Life')">🌱 Create Life</button>
+                        <button class="power-btn" onclick="usePower('Rain')">💧 Rain</button>
+                        <button class="power-btn" onclick="usePower('Firestorm')">🔥 Firestorm</button>
+                        <button class="power-btn" onclick="usePower('Blessing')">✨ Blessing</button>
+                        <button class="power-btn" onclick="usePower('Earthquake')">🌎 Earthquake</button>
+                    </div>
+                    <div
+                        style="background:rgba(30,30,60,0.85);border-radius:16px;padding:24px;min-width:220px;max-width:320px;">
+                        <h2 style="color:#ffd740;">World State</h2>
+                        <div class="world-state" id="worldState">
+                            Loading...
+                        </div>
+                    </div>
+                    <div
+                        style="background:rgba(30,30,60,0.95);border-radius:16px;padding:24px;min-width:220px;max-width:320px;max-height:340px;overflow-y:auto;">
+                        <h2 style="color:#ffd740;">Event Log</h2>
+                        <div id="eventLog"></div>
+                    </div>
+                </div>
+            </section>
+            <div style="text-align:center; margin-top:30px;">
+                <button onclick="closeGodGame()"
+                    style="padding:10px 32px; border-radius:8px; background:#4A0072; color:#fff; border:none; font-size:1.1em; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- ...existing code... -->
+
+    <!-- Add these styles to your <style> block -->
+
+    <!-- ...existing code... -->
+
+    <!-- Add this script before </script> -->
+
+    <!-- ...existing code... -->
+    <script>
+        // --- Start Menu Logic ---
+        const clock = new THREE.Clock();
+        let gameStarted = false;
+        let animationPaused = true;
+        const DEMON_URL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb';
+
+        const startMenu = document.getElementById('start-menu');
+        const settingsModal = document.getElementById('settings-modal');
+        const helpModal = document.getElementById('help-modal');
+        document.getElementById('btn-newgame').onclick = () => {
+            startMenu.style.display = 'none';
+            animationPaused = false;
+            if (!gameStarted) { initGame(); gameStarted = true; }
+        };
+        document.getElementById('btn-continue').onclick = () => {
+            startMenu.style.display = 'none';
+            animationPaused = false;
+            if (!gameStarted) { initGame(); gameStarted = true; }
+            setTimeout(() => loadGame(), 500);
+        };
+        document.getElementById('btn-settings').onclick = () => { settingsModal.style.display = 'block'; };
+        document.getElementById('btn-help').onclick = () => { helpModal.style.display = 'block'; };
+        window.closeSettings = () => { settingsModal.style.display = 'none'; };
+        window.closeHelp = () => { helpModal.style.display = 'none'; };
+        function showMenu() {
+            startMenu.style.display = 'flex';
+            animationPaused = true;
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (startMenu.style.display === 'none') showMenu();
+                else startMenu.style.display = 'none', animationPaused = false;
+            }
+        });
+
+        // === Basic Game Setup ===
+        let renderer, scene, camera, ambientLight, directionalLight, ground, player, vampire;
+        let sky, sun, moon;
+        let animateId;
+        function initGame() {
+            if (renderer) return;
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // --- SKY ---
+            const skyGeometry = new THREE.SphereGeometry(200, 32, 32);
+            const skyMaterial = new THREE.MeshBasicMaterial({
+                color: 0x87ceeb,
+                side: THREE.BackSide
+            });
+            sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            scene.add(sky);
+
+            // --- SUN ---
+            const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
+            const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff66, emissive: 0xffff66 });
+            sun = new THREE.Mesh(sunGeometry, sunMaterial);
+            scene.add(sun);
+
+            // --- MOON ---
+            const moonGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const moonMaterial = new THREE.MeshBasicMaterial({ color: 0xccccff, emissive: 0xccccff });
+            moon = new THREE.Mesh(moonGeometry, moonMaterial);
+            scene.add(moon);
+
+            // Lighting
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 0);
+            scene.add(directionalLight);
+
+            // Load Assets
+            const textureLoader = new THREE.TextureLoader();
+
+            // Load Textures
+            const groundTexture = textureLoader.load(' https://threejsfundamentals.org/threejs/resources/images/checker.png');
+            groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
+            groundTexture.repeat.set(20, 20);
+            groundTexture.anisotropy = 16; // Improve texture quality
+            groundTexture.minFilter = THREE.LinearFilter; // Prevent mipmapping artifacts
+
+            // Create Ground
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
+            ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+            ground.material.map = groundTexture;
+            // ...existing code...
+
+            // --- MOUNTAINS ---
+            // Create several mountain meshes with random positions and sizes
+            function createMountains() {
+                const mountainGroup = new THREE.Group();
+                for (let i = 0; i < 12; i++) {
+                    const height = 4 + Math.random() * 8;
+                    const radius = 2 + Math.random() * 3;
+                    const geo = new THREE.ConeGeometry(radius, height, 8 + Math.floor(Math.random() * 8));
+                    const mat = new THREE.MeshPhongMaterial({ color: 0x888888, flatShading: true });
+                    const mountain = new THREE.Mesh(geo, mat);
+                    // Place mountains in a ring far from the center
+                    const angle = (i / 12) * Math.PI * 2;
+                    const dist = 18 + Math.random() * 10;
+                    mountain.position.set(Math.cos(angle) * dist, height / 2, Math.sin(angle) * dist);
+                    mountain.rotation.y = Math.random() * Math.PI;
+                    mountainGroup.add(mountain);
+                }
+                scene.add(mountainGroup);
+            }
+            createMountains();
+
+            // --- VILLAGE ---
+            // Create a cluster of simple houses
+            function createVillage() {
+                const villageGroup = new THREE.Group();
+                const housePositions = [
+                    [2, 2], [3, 3], [2.5, 4], [4, 2.5], [3.5, 1.5], [1.5, 3.5]
+                ];
+                housePositions.forEach(([x, z]) => {
+                    // House base
+                    const baseGeo = new THREE.BoxGeometry(1, 0.7, 1);
+                    const baseMat = new THREE.MeshPhongMaterial({ color: 0xc2b280 });
+                    const base = new THREE.Mesh(baseGeo, baseMat);
+                    base.position.set(x, 0.35, z);
+
+                    // Roof
+                    const roofGeo = new THREE.ConeGeometry(0.7, 0.6, 4);
+                    const roofMat = new THREE.MeshPhongMaterial({ color: 0x8b3e2f });
+                    const roof = new THREE.Mesh(roofGeo, roofMat);
+                    roof.position.set(x, 0.95, z);
+                    roof.rotation.y = Math.PI / 4;
+
+                    villageGroup.add(base);
+                    villageGroup.add(roof);
+                });
+
+                // Optionally add a central well or market
+                const wellGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.4, 16);
+                const wellMat = new THREE.MeshPhongMaterial({ color: 0x888888 });
+                const well = new THREE.Mesh(wellGeo, wellMat);
+                well.position.set(3, 0.2, 3);
+                villageGroup.add(well);
+
+                scene.add(villageGroup);
+            }
+            createVillage();
+            
+            // ...existing code...
+            // Create Player
+            player = new THREE.Group();
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+            const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.add(playerMesh);
+            player.position.set(0, 1, 0);
+            scene.add(player);
+
+            // Add Simple Enemy (Vampire)'
+            // Vampire Stats'
+            const DEMON_URL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb';
+            const vampireStats = {
+                name: "Vampire Lord",
+                health: 100,
+                mana: 50,
+                attack: 15,
+                defense: 10,
+                isAlive: true
+            };
+            const vampireTexture = textureLoader.load('https://threejsfundamentals.org/threejs/resources/images/wall.jpg');
+            const vampireMaterial = new THREE.MeshPhongMaterial({ map: vampireTexture });
+            vampire = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), vampireMaterial);
+            vampire.position.set(5, 1, 5);
+            scene.add(vampire);
+
+
+            // Demon Tower
+            demonTower = new DemonTower(30);
+
+
+
+            // Interactivity
+            renderer.domElement.addEventListener('pointerdown', (event) => {
+                const mouse = new THREE.Vector2(
+                    (event.clientX / window.innerWidth) * 2 - 1,
+                    -(event.clientY / window.innerHeight) * 2 + 1
+                );
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, camera);
+
+                const interactables = [vampire];
+                const intersects = raycaster.intersectObjects(interactables);
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (obj === vampire && vampireStats.isAlive) {
+                        showBattleUI();
+                    }
+                }
+                const loader = new THREE.GLTFLoader();
+                let demonMixer;
+
+                function loadDemonEnemy() {
+                    loader.load(DEMON_URL, function (gltf) {
+                        const model = gltf.scene;
+                        model.scale.set(1.5, 1.5, 1.5);
+                        model.position.set(-10, 0, -10);
+                        scene.add(model);
+
+                        demonMixer = new THREE.AnimationMixer(model);
+                        const action = demonMixer.clipAction(gltf.animations[0]); // first animation
+                        action.play();
+
+                        // Store reference for later
+                        demonTower.monsterMesh = model;
+
+                    }, undefined, function (error) {
+                        console.error('Failed to load .glb:', error);
+                    });
+                }
+                // Tower click
+                const towerIntersects = raycaster.intersectObjects(demonTower.towerGroup.children);
+                if (towerIntersects.length > 0 && !demonTower.inTower) {
+                    demonTower.enterTower();
+                }
+            });
+
+            renderer.domElement.addEventListener('pointermove', (event) => {
+                const mouse = new THREE.Vector2(
+                    (event.clientX / window.innerWidth) * 2 - 1,
+                    -(event.clientY / window.innerHeight) * 2 + 1
+                );
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, camera);
+                const interactables = [vampire];
+                const intersects = raycaster.intersectObjects(interactables);
+                document.body.style.cursor = intersects.length > 0 ? 'pointer' : '';
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            showPartyHUD();
+            showStoryChapter(currentChapter);
+            animate();
+        }
+
+        // === RPG Webtoon Storyline & Characters ===
+        const storyline = [
+            { chapter: 1, title: "Prologue: The Prophecy", description: "The legend of the Chosen One is revealed." },
+            { chapter: 2, title: "A Village in Peril", description: "The hero’s hometown is attacked by shadow beasts." },
+            { chapter: 3, title: "First Steps", description: "Tutorial: basic movement, combat, and inventory." },
+            { chapter: 4, title: "The Lost Heirloom", description: "Retrieve a family relic from goblin caves." },
+            { chapter: 5, title: "Meeting the Mentor", description: "Guided by a mysterious mage." },
+            { chapter: 6, title: "Forest of Whispers", description: "Learn stealth and magic basics." },
+            { chapter: 7, title: "Bandit Ambush", description: "First boss fight; rescue a merchant." },
+            { chapter: 8, title: "The Ancient Ruins", description: "Solve puzzles to unlock hidden powers." },
+            { chapter: 9, title: "A Friend in Need", description: "Recruit the first party member." },
+            { chapter: 10, title: "Departure", description: "Leave the village, beginning the true journey." },
+            { chapter: 100, title: "Bonus: The Next Adventure", description: "Tease a sequel or spin-off." }
+        ];
+        for (let i = 11; i <= 99; i++) {
+            storyline.splice(i - 1, 0, { chapter: i, title: `Chapter ${i}`, description: `Story event for chapter ${i}.` });
+        }
+
+        const characters = [
+            { name: "Alden", role: "Hero", description: "The chosen one destined to save Eldoria." },
+            { name: "Lyra", role: "Mage Mentor", description: "A wise mage who guides the hero." },
+            { name: "Garrick", role: "Warrior Companion", description: "A loyal friend and skilled swordsman." },
+            { name: "Selene", role: "Rogue", description: "A stealthy thief with a mysterious past." },
+            { name: "Vampire Lord", role: "Antagonist", description: "A powerful foe who commands the shadows." }
+        ];
+
+        let currentChapter = 1;
+        function showStoryChapter(chapterNum) {
+            const chapter = storyline.find(c => c.chapter === chapterNum);
+            if (!chapter) return;
+            let infoDiv = document.getElementById('info');
+            if (!infoDiv) {
+                infoDiv = document.createElement('div');
+                infoDiv.id = 'info';
+                document.body.appendChild(infoDiv);
+            }
+            infoDiv.innerHTML = `<h2>Chapter ${chapter.chapter}: ${chapter.title}</h2><p>${chapter.description}</p>`;
+
+        }
+        window.nextChapter = function () {
+            currentChapter++;
+            if (currentChapter > storyline.length) currentChapter = 1;
+            showStoryChapter(currentChapter);
+
+        };
+        showStoryChapter(currentChapter);
+
+
+        let party = [characters[0], characters[2]]; // Alden and Garrick
+
+        function addToParty(characterName) {
+            const char = characters.find(c => c.name === characterName);
+            if (char && !party.includes(char)) {
+                party.push(char);
+                showPartyHUD();
+            }
+        }
+
+        function showPartyHUD() {
+            let partyDiv = document.getElementById('party');
+            if (!partyDiv) {
+                partyDiv = document.createElement('div');
+                partyDiv.id = 'party';
+                document.body.appendChild(partyDiv);
+            }
+            partyDiv.innerHTML = `<b>Party:</b><br>` + party.map((c, i) =>
+                `<span style="cursor:pointer;color:${i === 0 ? '#ffd700' : '#fff'}" onclick="switchActiveCharacter(${i})">${c.name}</span><br>`
+            ).join('');
+        }
+        window.switchActiveCharacter = function (idx) {
+            if (idx > 0 && idx < party.length) {
+                const temp = party[0];
+                party[0] = party[idx];
+                party[idx] = temp;
+                showPartyHUD();
+                showStoryChapter(currentChapter);
+            }
+        };
+        showPartyHUD();
+
+        // === Inventory System ===
+        class MedievalInventory {
+            constructor() {
+                this.items = [];
+                this.slots = 20;
+                this.initInventory();
+            }
+            initInventory() {
+                const container = document.querySelector('.inventory-slots');
+                for (let i = 0; i < this.slots; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'slot';
+                    slot.dataset.index = i;
+                    container.appendChild(slot);
+                }
+            }
+            addItem(item) {
+                if (this.items.length >= this.slots) return;
+                this.items.push(item);
+                this.updateSlot(this.items.length - 1, item);
+            }
+            updateSlot(index, item) {
+                const slot = document.querySelector(`.slot[data-index="${index}"]`);
+                slot.innerHTML = `
+                <img src="${item.icon}" alt="${item.name}">
+                <div class="item-count">${item.stack || ''}</div>
+            `;
+            }
+        }
+        const inventorySystem = new MedievalInventory();
+        inventorySystem.addItem({
+            name: 'Steel Sword',
+            icon: 'https://i.imgur.com/5X2Q9yP.png',
+            type: 'weapon',
+            damage: 35
+        });
+        inventorySystem.addItem({
+            name: 'Health Potion',
+            icon: 'https://i.imgur.com/8zJ3Z7y.png',
+            type: 'consumable',
+            effect: 'heal'
+        });
+
+        // === Battle & Physics Variables ===
+        let velocityY = 0;
+        const gravity = -0.01;
+        let isOnGround = true;
+
+        let playerStats = {
+            hp: 100,
+            maxHp: 100,
+            attack: 35,
+            defense: 10
+        };
+
+        let vampireStats = {
+            hp: 80,
+            maxHp: 80,
+            attack: 20,
+            defense: 5,
+            isAlive: true
+        };
+
+        // === Battle UI ===
+        function showBattleUI() {
+            let battleDiv = document.getElementById('battle');
+            if (!battleDiv) {
+                battleDiv = document.createElement('div');
+                battleDiv.id = 'battle';
+                document.body.appendChild(battleDiv);
+            }
+            battleDiv.innerHTML = `
+            <b>Battle!</b><br>
+            <span>Player HP: ${playerStats.hp}/${playerStats.maxHp}</span> |
+            <span>Vampire HP: ${vampireStats.hp}/${vampireStats.maxHp}</span><br>
+            <button onclick="playerAttack()">Attack</button>
+            <button onclick="playerUsePotion()">Use Potion</button>
+            <button onclick="endBattle()">Run</button>
+        `;
+            battleDiv.style.display = 'block';
+        }
+        window.showBattleUI = showBattleUI;
+
+        function hideBattleUI() {
+            const battleDiv = document.getElementById('battle');
+            if (battleDiv) battleDiv.style.display = 'none';
+        }
+        window.hideBattleUI = hideBattleUI;
+
+        // === Battle Logic ===
+        window.playerAttack = function () {
+            if (!vampireStats.isAlive) return;
+            let dmg = Math.max(0, playerStats.attack - vampireStats.defense + Math.floor(Math.random() * 6 - 3));
+            vampireStats.hp -= dmg;
+            vampire.material.color.set(0xff0000);
+            setTimeout(() => vampire.material.color.set(0xffffff), 200);
+            showBattleUI();
+            if (vampireStats.hp <= 0) {
+                vampireStats.isAlive = false;
+                vampire.visible = false;
+                hideBattleUI();
+                alert("You defeated the Vampire Lord!");
+                addToParty("Vampire Lord");
+                return;
+            }
+            setTimeout(enemyAttack, 500);
+        };
+
+        window.playerUsePotion = function () {
+            // Find a potion in inventory
+            const potionIdx = inventorySystem.items.findIndex(i => i.type === 'consumable' && i.effect === 'heal');
+            if (potionIdx !== -1) {
+                playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + 40);
+                inventorySystem.items.splice(potionIdx, 1);
+                // Redraw inventory
+                document.querySelectorAll('.slot').forEach(slot => slot.innerHTML = '');
+                inventorySystem.items.forEach((item, idx) => inventorySystem.updateSlot(idx, item));
+                showBattleUI();
+                setTimeout(enemyAttack, 500);
+            } else {
+                alert("No potions left!");
+            }
+        };
+
+        function enemyAttack() {
+            if (!vampireStats.isAlive) return;
+            let dmg = Math.max(0, vampireStats.attack - playerStats.defense + Math.floor(Math.random() * 6 - 3));
+            playerStats.hp -= dmg;
+
+            // --- Attack Scene/Video Logic ---
+            // Remove any previous attack scene
+            let attackScene = document.getElementById('attack-scene');
+            if (attackScene) attackScene.remove();
+
+            // Example: Show a video or animated scene overlay
+            attackScene = document.createElement('div');
+            attackScene.id = 'attack-scene';
+            attackScene.style.position = 'fixed';
+            attackScene.style.top = '0';
+            attackScene.style.left = '0';
+            attackScene.style.width = '100vw';
+            attackScene.style.height = '100vh';
+            attackScene.style.background = 'rgba(0,0,0,0.7)';
+            attackScene.style.zIndex = '3000';
+            attackScene.style.display = 'flex';
+            attackScene.style.alignItems = 'center';
+            attackScene.style.justifyContent = 'center';
+
+            // Example: Use a video (replace src with your own video or animation)
+            const video = document.createElement('video');
+            video.src = 'feature-5.mp4'; // Replace with your attack video
+            video.autoplay = true;
+            video.muted = true;
+            video.style.maxWidth = '60vw';
+            video.style.maxHeight = '60vh';
+            video.style.borderRadius = '16px';
+            video.onended = () => attackScene.remove();
+
+            attackScene.appendChild(video);
+            document.body.appendChild(attackScene);
+
+            // Remove the scene after video ends or after a timeout (fallback)
+            setTimeout(() => {
+                if (attackScene.parentNode) attackScene.remove();
+            }, 3000);
+
+            // Damage effect
+            const damageEffect = document.querySelector('.damage-effect');
+            if (damageEffect) {
+                damageEffect.innerHTML = `-${dmg}`;
+                damageEffect.style.display = 'block';
+                setTimeout(() => damageEffect.style.display = 'none', 500);
+            }
+            document.getElementById('health').innerText = `Health: ${playerStats.hp}`;
+            if (playerStats.hp <= 0) {
+                playerStats.hp = 0;
+                endBattle();
+                return;
+            }
+            // Flash player color to indicate damage
+            const playerMaterial = player.children[0].material;
+            playerMaterial.color.set(0xff0000);
+            setTimeout(() => playerMaterial.color.set(0x00ff00), 200);
+            player.children.forEach(mesh => mesh.material.color.set(0xff0000));
+            setTimeout(() => player.children.forEach(mesh => mesh.material.color.set(0x00ff00)), 200);
+            showBattleUI();
+
+            if (playerStats.hp <= 0) {
+                hideBattleUI();
+                alert("You were defeated! Reload to try again.");
+            }
+        }
+
+
+
+        window.endBattle = function () {
+            hideBattleUI();
+            player.position.x -= 2;
+            player.position.z -= 2;
+        };
+
+        // === Movement Controls ===
+        const moveSpeed = 0.2;
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ') {
+                if (isOnGround) {
+                    velocityY = 0.25;
+                    isOnGround = false;
+                }
+            }
+            if (e.key === 'i') { // Toggle inventory
+                const inv = document.querySelector('.inventory');
+                inv.style.display = inv.style.display === 'block' ? 'none' : 'block';
+            }
+            if (e.key === 'c') { // Show/hide party HUD
+                const partyDiv = document.getElementById('party');
+                if (partyDiv) partyDiv.style.display = partyDiv.style.display === 'none' ? 'block' : 'none';
+            }
+            if (e.key === 'p') { // Add Lyra to party
+                addToParty("Lyra");
+            }
+        });
+        document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+        // ...existing code...
+
+        // === Demon Tower System (Upgraded) ===
+        class DemonTower {
+            constructor(floors = 5) {
+                this.floors = floors;
+                this.towerGroup = new THREE.Group();
+                this.floorMeshes = [];
+                this.createTower();
+                scene.add(this.towerGroup);
+                this.activeFloor = 0;
+                this.inTower = false;
+                this.towerGroup.visible = false;
+
+                // Define monsters and their scene setup for each floor
+                this.monsters = [
+                    {
+                        name: "Earth Blob",
+                        hp: 40,
+                        attack: 8,
+                        defense: 3,
+                        intro: "A rumbling Earth Blob emerges, summoning rocks around you!",
+                        scene: this.createEarthFloorScene.bind(this)
+                    },
+                    {
+                        name: "Wind Serpent",
+                        hp: 45,
+                        attack: 14,
+                        defense: 4,
+                        intro: "The Wind Serpent coils in a tornado of dust!",
+                        scene: this.createWindFloorScene.bind(this)
+                    }
+                    ,
+                    {
+                        name: "Ice Golem",
+                        hp: 50,
+                        attack: 10,
+                        defense: 5,
+                        intro: "A chilling Ice Golem stomps forward, freezing the air!",
+                        scene: this.createIceFloorScene.bind(this)
+                    },
+                    {
+                        name: "Shadow Bat",
+                        hp: 30,
+                        attack: 15,
+                        defense: 1,
+                        intro: "A swarm of Shadow Bats descends from the darkness!",
+                        scene: this.createShadowFloorScene.bind(this)
+                    },
+                    {
+                        name: "Tower Guardian",
+                        hp: 80,
+                        attack: 18,
+                        defense: 8,
+                        intro: "The Tower Guardian appears, radiating ominous power!",
+                        scene: this.createBossFloorScene.bind(this)
+                    }
+
+                ];
+                this.currentMonster = null;
+                this.monsterMesh = null;
+                this.floorEffectGroup = null;
+                this.towerGroup.position.set(-10, 0, -10);
+                this.towerGroup.visible = true;
+            }
+
+            createTower() {
+                for (let i = 0; i < this.floors; i++) {
+                    const floorGeo = new THREE.CylinderGeometry(3, 3, 1, 16);
+                    const floorMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+                    const floor = new THREE.Mesh(floorGeo, floorMat);
+                    floor.position.y = 0.5 + i;
+                    this.towerGroup.add(floor);
+                    this.floorMeshes.push(floor);
+                }
+                // Boss floor highlight
+                this.floorMeshes[this.floors - 1].material.color.set(0xff2222);
+                this.floorMeshes[this.floors - 1].name = "Boss Floor";
+                this.floorMeshes[this.floors - 1].userData = { isBoss: true };
+                this.floorMeshes.forEach((floor, index) => {
+                    floor.name = `Floor ${index + 1}`;
+                    floor.userData = { isFloor: true, floorNumber: index + 1 };
+                });
+            }
+
+            enterTower() {
+                this.inTower = true;
+                this.activeFloor = 1;
+                this.startFloorBattle();
+            }
+
+            nextFloor() {
+                if (this.activeFloor < this.floors) {
+                    this.activeFloor++;
+                    this.startFloorBattle();
+                } else {
+                    this.exitTower();
+                    alert("You have conquered the Demon Tower!");
+                }
+            }
+
+            exitTower() {
+                this.inTower = false;
+                hideTowerUI();
+                hideBossUI();
+                this.clearFloorScene();
+            }
+
+            startFloorBattle() {
+                this.clearFloorScene();
+                const monster = this.monsters[this.activeFloor - 1];
+                this.currentMonster = { ...monster }; // clone stats
+                monster.scene(); // Set up the scene for this floor
+                showTowerUI(this.activeFloor, this.floors, monster);
+            }
+
+            clearFloorScene() {
+                // Remove previous monster mesh and floor effects
+                if (this.monsterMesh && this.monsterMesh.parent) {
+                    scene.remove(this.monsterMesh);
+                    this.monsterMesh = null;
+                }
+                if (demonMixer) {
+                    demonMixer.stopAllAction();
+                    demonMixer = null;
+                }
+
+            }
+
+            // --- Floor Scene Methods ---
+            createEarthFloorScene() {
+                // Earthy ground color
+                this.floorMeshes[this.activeFloor - 1].material.color.set(0x7c5e3c);
+                // Earth Blob (sphere)
+                const blobGeo = new THREE.SphereGeometry(1, 24, 24);
+                const blobMat = new THREE.MeshPhongMaterial({ color: 0x6b8e23 });
+                this.monsterMesh = new THREE.Mesh(blobGeo, blobMat);
+                this.monsterMesh.position.set(-10, 2, -10);
+                scene.add(this.monsterMesh);
+
+                // Summon rocks
+                this.floorEffectGroup = new THREE.Group();
+                for (let i = 0; i < 5; i++) {
+                    const rockGeo = new THREE.DodecahedronGeometry(0.4 + Math.random() * 0.3);
+                    const rockMat = new THREE.MeshPhongMaterial({ color: 0x8b7b5a });
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(-10 + Math.cos(i * 2 * Math.PI / 5) * 2, 1, -10 + Math.sin(i * 2 * Math.PI / 5) * 2);
+                    this.floorEffectGroup.add(rock);
+                }
+                scene.add(this.floorEffectGroup);
+            }
+
+            createWindFloorScene() {
+                this.floorMeshes[this.activeFloor - 1].material.color.set(0xa0e8ff);
+
+                const serpentGeo = new THREE.TorusKnotGeometry(0.6, 0.2, 64, 8);
+                const serpentMat = new THREE.MeshPhongMaterial({ color: 0x00bcd4, emissive: 0x00838f });
+                this.monsterMesh = new THREE.Mesh(serpentGeo, serpentMat);
+                this.monsterMesh.position.set(-10, 2, -10);
+                scene.add(this.monsterMesh);
+
+                this.floorEffectGroup = new THREE.Group();
+                for (let i = 0; i < 6; i++) {
+                    const swirlGeo = new THREE.RingGeometry(0.5, 0.7, 32);
+                    const swirlMat = new THREE.MeshBasicMaterial({ color: 0x80deea, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+                    const swirl = new THREE.Mesh(swirlGeo, swirlMat);
+                    swirl.rotation.x = Math.PI / 2;
+                    swirl.position.set(-10, 1 + i * 0.3, -10);
+                    this.floorEffectGroup.add(swirl);
+                }
+                scene.add(this.floorEffectGroup);
+            }
+
+
+            createIceFloorScene() {
+                this.floorMeshes[this.activeFloor - 1].material.color.set(0x90caf9);
+                // Ice Golem (cube)
+                const golemGeo = new THREE.BoxGeometry(1.2, 1.6, 1.2);
+                const golemMat = new THREE.MeshPhongMaterial({ color: 0xb3e5fc, shininess: 80 });
+                this.monsterMesh = new THREE.Mesh(golemGeo, golemMat);
+                this.monsterMesh.position.set(-10, 2, -10);
+                scene.add(this.monsterMesh);
+
+                // Ice spikes
+                this.floorEffectGroup = new THREE.Group();
+                for (let i = 0; i < 6; i++) {
+                    const spikeGeo = new THREE.ConeGeometry(0.15, 1, 8);
+                    const spikeMat = new THREE.MeshPhongMaterial({ color: 0x81d4fa });
+                    const spike = new THREE.Mesh(spikeGeo, spikeMat);
+                    spike.position.set(-10 + Math.cos(i * 2 * Math.PI / 6) * 1.7, 1, -10 + Math.sin(i * 2 * Math.PI / 6) * 1.7);
+                    spike.rotation.x = Math.PI / 2;
+                    this.floorEffectGroup.add(spike);
+                }
+                scene.add(this.floorEffectGroup);
+            }
+
+            createShadowFloorScene() {
+                this.floorMeshes[this.activeFloor - 1].material.color.set(0x22223a);
+                // Shadow Bat (flat box)
+                const batGeo = new THREE.BoxGeometry(1.5, 0.3, 0.5);
+                const batMat = new THREE.MeshPhongMaterial({ color: 0x333344 });
+                this.monsterMesh = new THREE.Mesh(batGeo, batMat);
+                this.monsterMesh.position.set(-10, 2.5, -10);
+                scene.add(this.monsterMesh);
+
+                // Shadowy mist
+                this.floorEffectGroup = new THREE.Group();
+                for (let i = 0; i < 10; i++) {
+                    const mistGeo = new THREE.SphereGeometry(0.3 + Math.random() * 0.2, 8, 8);
+                    const mistMat = new THREE.MeshPhongMaterial({ color: 0x444466, transparent: true, opacity: 0.3 });
+                    const mist = new THREE.Mesh(mistGeo, mistMat);
+                    mist.position.set(-10 + Math.random() * 3 - 1.5, 1.2 + Math.random(), -10 + Math.random() * 3 - 1.5);
+                    this.floorEffectGroup.add(mist);
+                }
+                scene.add(this.floorEffectGroup);
+            }
+
+            createBossFloorScene() {
+                this.floorMeshes[this.activeFloor - 1].material.color.set(0x6a1b9a);
+                // Tower Guardian (tall cylinder)
+                const bossGeo = new THREE.CylinderGeometry(0.8, 1.2, 2.5, 16);
+                const bossMat = new THREE.MeshPhongMaterial({ color: 0x9c27b0, shininess: 100 });
+                this.monsterMesh = new THREE.Mesh(bossGeo, bossMat);
+                this.monsterMesh.position.set(-10, 2.5, -10);
+                scene.add(this.monsterMesh);
+
+                // Magical aura
+                this.floorEffectGroup = new THREE.Group();
+                for (let i = 0; i < 12; i++) {
+                    const auraGeo = new THREE.TorusGeometry(1.2 + i * 0.1, 0.05, 8, 24);
+                    const auraMat = new THREE.MeshPhongMaterial({ color: 0xe1bee7, transparent: true, opacity: 0.15 });
+                    const aura = new THREE.Mesh(auraGeo, auraMat);
+                    aura.position.set(-10, 2.5, -10);
+                    aura.rotation.x = Math.PI / 2;
+                    this.floorEffectGroup.add(aura);
+                }
+                scene.add(this.floorEffectGroup);
+            }
+        }
+        // ...existing code...
+
+        // ...existing code...
+        // === Tower UI ===
+        function showTowerUI(floor, maxFloors, monster) {
+            let towerDiv = document.getElementById('tower-ui');
+            if (!towerDiv) {
+                towerDiv = document.createElement('div');
+                towerDiv.id = 'tower-ui';
+                towerDiv.style.position = 'fixed';
+                towerDiv.style.top = '50px';
+                towerDiv.style.right = '50px';
+                towerDiv.style.background = 'rgba(30,30,40,0.97)';
+                towerDiv.style.color = '#fff';
+                towerDiv.style.padding = '32px 28px 24px 28px';
+                towerDiv.style.borderRadius = '16px';
+                towerDiv.style.fontFamily = 'Segoe UI, Arial, sans-serif';
+                towerDiv.style.zIndex = 2100;
+                towerDiv.style.textAlign = 'center';
+                towerDiv.style.minWidth = '340px';
+                towerDiv.style.boxShadow = '0 4px 24px #000a';
+                document.body.appendChild(towerDiv);
+            }
+            towerDiv.innerHTML = `
+        <h2>Demon Tower</h2>
+        <p>Floor <b>${floor}</b> / ${maxFloors}</p>
+        <h3>${monster ? monster.name : ''}</h3>
+        <p>${monster ? monster.intro : ''}</p>
+        <button onclick="fightTowerMonster()">Fight Monster</button>
+        <button onclick="demonTower.nextFloor()">Next Floor</button>
+        <button onclick="demonTower.exitTower()">Exit Tower</button>
+    `;
+            towerDiv.style.display = 'block';
+        }
+        // === Boss UI ===
+        function showBossUI() {
+            let bossDiv = document.getElementById('boss-ui');
+            if (!bossDiv) {
+                bossDiv = document.createElement('div');
+                bossDiv.id = 'boss-ui';
+                bossDiv.style.position = 'fixed';
+                bossDiv.style.top = '50%';
+                bossDiv.style.left = '50%';
+                bossDiv.style.transform = 'translate(-50%,-50%)';
+                bossDiv.style.background = 'rgba(60,0,0,0.97)';
+                bossDiv.style.color = '#fff';
+                bossDiv.style.padding = '40px';
+                bossDiv.style.borderRadius = '18px';
+                bossDiv.style.fontFamily = 'Segoe UI, Arial, sans-serif';
+                bossDiv.style.zIndex = 2100;
+                bossDiv.style.textAlign = 'center';
+                bossDiv.style.minWidth = '340px';
+                document.body.appendChild(bossDiv);
+            }
+            bossDiv.innerHTML = `
+            <h2>Boss Floor!</h2>
+            <p>You face the Demon Tower Gatekeeper!</p>
+            <button onclick="fightTowerBoss()">Fight Boss</button>
+            <button onclick="demonTower.exitTower()">Exit Tower</button>
+        `;
+            bossDiv.style.display = 'block';
+        }
+        function hideBossUI() {
+            const bossDiv = document.getElementById('boss-ui');
+            if (bossDiv) bossDiv.style.display = 'none';
+        }
+
+        // === Tower Combat (Simple Example) ===
+        window.fightTowerMonster = function () {
+            alert("You fought a demon and gained a skill!");
+        };
+        window.fightTowerBoss = function () {
+            alert("You defeated the Demon Tower Gatekeeper and gained a legendary skill!");
+            demonTower.exitTower();
+        };
+
+        // === Animation Loop with Physics, Tower, and Day/Night ===
+        let dayTime = 0; // 0 to 1, where 0 is midnight, 0.5 is noon, 1 is midnight again
+        const daySpeed = 0.0001; // Increase for faster cycle
+
+        function updateDayNightCycle() {
+            dayTime += daySpeed;
+            if (dayTime > 1) dayTime = 0; // Reset to midnight
+            if (!directionalLight || !ambientLight) return;
+            // Update directional light position based on time of day
+            directionalLight.position.y = Math.sin(dayTime * Math.PI * 2) * 20; // Sun height
+            directionalLight.position.x = Math.cos(dayTime * Math.PI * 2) * 20; // Sun position
+
+            // Calculate sun position and light color/intensity
+            const sunAngle = dayTime * Math.PI * 2;
+
+            // --- Sun & Moon positions ---
+            const sunRadius = 40;
+            if (sun) {
+                sun.position.set(
+                    Math.cos(sunAngle) * sunRadius,
+                    Math.sin(sunAngle) * sunRadius,
+                    0
+                );
+                sun.visible = Math.sin(sunAngle) > 0;
+            }
+            if (moon) {
+                // Moon is opposite the sun
+                moon.position.set(
+                    Math.cos(sunAngle + Math.PI) * sunRadius,
+                    Math.sin(sunAngle + Math.PI) * sunRadius,
+                    0
+                );
+                moon.visible = Math.sin(sunAngle) <= 0;
+            }
+            // --- Sky color ---
+            if (sky && sky.material) {
+                // Interpolate between day and night colors
+                const t = Math.max(0, Math.sin(sunAngle));
+                const dayColor = new THREE.Color(0x87ceeb); // blue
+                const nightColor = new THREE.Color(0x181824); // dark
+                sky.material.color.copy(dayColor.clone().lerp(nightColor, 1 - t));
+            }
+
+            directionalLight.position.set(Math.cos(sunAngle) * 20, Math.sin(sunAngle) * 20, 0);
+            ambientLight.position.set(Math.cos(sunAngle) * 20, Math.sin(sunAngle) * 20, 0);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            // Light intensity and color
+            const intensity = 0.2 + 0.8 * Math.max(0, Math.sin(sunAngle));
+            directionalLight.intensity = intensity;
+            ambientLight.intensity = 0.2 + 0.3 * Math.max(0, Math.sin(sunAngle));
+            // Update directional light shadow map size
+            directionalLight.shadow.mapSize.width = 1024 * intensity;
+            directionalLight.shadow.mapSize.height = 1024 * intensity;
+            directionalLight.shadow.camera.left = -20 * intensity;
+            directionalLight.shadow.camera.right = 20 * intensity;
+            // Color transitions (warm at sunrise/sunset, white at noon, blue at night)
+            if (Math.sin(sunAngle) > 0) {
+                // Day
+                directionalLight.color.setHSL(0.13, 0.7, 0.9); // warm sunlight
+                ambientLight.color.setHSL(0.6, 0.2, 0.8); // soft daylight
+
+            } else {
+                // Night
+                directionalLight.color.setHSL(0.6, 0.7, 0.3); // moonlight
+                ambientLight.color.setHSL(0.6, 0.5, 0.2); // dark blue
+
+            }
+        }
+
+        function animate() {
+
+            if (animationPaused) {
+                animateId = requestAnimationFrame(animate);
+                return;
+                const delta = clock.getDelta();
+                if (demonMixer) demonMixer.update(delta);
+
+            }
+            animateId = requestAnimationFrame(animate);
+            if (!renderer || !scene || !camera) return;
+            if (!player || !vampire) return;
+            // Handle player movement
+            if (!keys) keys = {};
+            if (!player.position) return; // Ensure player exists
+            if (keys['ArrowUp'] || keys['w']) player.position.z -= moveSpeed;
+            if (keys['ArrowDown'] || keys['s']) player.position.z += moveSpeed;
+            if (keys['w']) player.position.z -= moveSpeed;
+            if (keys['s']) player.position.z += moveSpeed;
+            if (keys['a']) player.position.x -= moveSpeed;
+            if (keys['d']) player.position.x += moveSpeed;
+            if (keys['q']) player.rotation.y += 0.05; // Rotate left
+            if (keys['e']) player.rotation.y -= 0.05; // Rotate right
+            if (keys['r']) player.position.y += 0.1; // Ascend
+            if (keys['f']) player.position.y -= 0.1; // Descend
+            if (keys[' ']) {
+                if (isOnGround) {
+                    velocityY = 0.25; // Jump
+                    isOnGround = false;
+                }
+            }
+            if (keys['x']) {
+                // Toggle tower entrance
+                if (demonTower.inTower) {
+                    demonTower.exitTower();
+                } else {
+                    demonTower.enterTower();
+                }
+            }
+            if (keys['i']) {
+                // Toggle inventory
+                const inv = document.querySelector('.inventory');
+                inv.style.display = inv.style.display === 'block' ? 'none' : 'block';
+            }
+            if (keys['c']) {
+                // Toggle party HUD
+                const partyDiv = document.getElementById('party');
+                if (partyDiv) partyDiv.style.display = partyDiv.style.display === 'none' ? 'block' : 'none';
+            }
+            if (keys['n']) {
+                // Next chapter
+                currentChapter = Math.min(currentChapter + 1, storyline.length);
+                showStoryChapter(currentChapter);
+            }
+            // Gravity and jumping
+            if (!isOnGround) {
+                velocityY += gravity;
+                player.position.y += velocityY;
+                if (player.position.y <= 1) {
+                    player.position.y = 1;
+                    velocityY = 0;
+                    isOnGround = true;
+                }
+            }
+
+            // Simple collision: prevent walking through vampire
+            if (vampireStats.isAlive) {
+                const dx = player.position.x - vampire.position.x;
+                const dz = player.position.z - vampire.position.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist < 1.5) {
+                    // Knockback effect
+                    const angle = Math.atan2(dz, dx);
+                    player.position.x += Math.cos(angle) * 0.1;
+                    player.position.z += Math.sin(angle) * 0.1;
+                }
+            }
+
+            // Day/Night cycle
+            updateDayNightCycle();
+
+            camera.position.set(player.position.x, player.position.y + 5, player.position.z + 8);
+            camera.lookAt(player.position.x, player.position.y + 1, player.position.z);
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+
+        // Dummy loadGame for continue button
+        function loadGame() {
+            alert("Load game feature coming soon!");
+        }
+        // --- God Game Modal Logic ---
+        const godgameModal = document.getElementById('godgame-modal');
+        document.getElementById('btn-godgame').onclick = () => {
+            godgameModal.style.display = 'block';
+            initGodGame3DWorld(); // Initialize 3D solar system when modal opens
+        };
+        window.closeGodGame = () => {
+            godgameModal.style.display = 'none';
+            if (window.godgameRenderer) {
+                window.godgameRenderer.dispose && window.godgameRenderer.dispose();
+                window.godgameRenderer.domElement.remove();
+                window.godgameRenderer = null;
+            }
+        };
+        // --- God Game Demo Logic ---
+        const world = {
+            population: 10,
+            water: 50,
+            fire: 0,
+            blessing: false,
+            stability: 100
+        };
+
+        function updateWorldState() {
+            const ws = document.getElementById('worldState');
+            if (!ws) return;
+
+            ws.innerHTML = `
+        <strong>Population:</strong> ${world.population}<br>
+        <strong>Water:</strong> ${world.water}<br>
+        <strong>Fire:</strong> ${world.fire}<br>
+        <strong>Blessing:</strong> ${world.blessing ? 'Active' : 'None'}<br>
+        <strong>Stability:</strong> ${world.stability}
+    `;
+            ws.style.color = world.stability < 50 ? 'red' : 'white';
+            ws.style.backgroundColor = world.fire > 0 ? 'rgba(255,0,0,0.1)' : 'rgba(0,0,0,0.1)';
+            ws.style.padding = '10px';
+            ws.style.borderRadius = '8px';
+            ws.style.fontFamily = 'Arial, sans-serif';
+        }
+
+        function logEvent(msg) {
+            const log = document.getElementById('eventLog');
+            if (!log) return;
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = msg;
+            log.prepend(entry);
+        }
+        window.usePower = function (power) {
+            switch (power) {
+                case 'Create Life':
+                    world.population += 5;
+                    logEvent('You created new life! Population increased.');
+                    break;
+                case 'Rain':
+                    world.water += 20;
+                    if (world.fire > 0) {
+                        world.fire = Math.max(0, world.fire - 10);
+                        logEvent('Rain extinguished some fire!');
+                    } else {
+                        logEvent('Rain nourished the land. Water increased.');
+                    }
+                    break;
+                case 'Firestorm':
+                    world.fire += 20;
+                    world.population = Math.max(0, world.population - 3);
+                    logEvent('A firestorm rages! Population decreased, fire increased.');
+                    break;
+                case 'Blessing':
+                    world.blessing = true;
+                    logEvent('You bestowed a blessing upon the world!');
+                    break;
+                case 'Earthquake':
+                    world.stability -= 30;
+                    world.population = Math.max(0, world.population - 2);
+                    logEvent('An earthquake shakes the land! Stability and population decreased.');
+                    break;
+                default:
+                    logEvent('Unknown power used.');
+                    return;
+
+            }
+
+            // Blessing effect: next negative event is halved
+            if (world.blessing && (power === 'Firestorm' || power === 'Earthquake')) {
+                world.population += 2; // mitigate loss
+                world.stability += 15;
+                world.blessing = false;
+                logEvent('Blessing softened the disaster\'s impact!');
+                if (power === 'Firestorm') {
+                    world.fire = Math.max(0, world.fire - 10); // reduce fire damage
+                } else if (power === 'Earthquake') {
+                    world.stability = Math.min(100, world.stability + 20); // reduce stability loss
+                }
+            }
+            // Clamp values
+            world.water = Math.max(0, world.water);
+            world.fire = Math.max(0, world.fire);
+            world.stability = Math.max(0, Math.min(100, world.stability));
+            updateWorldState();
+        };
+        // ...existing code...
+
+
+// --- 3D Solar System for God Game Modal ---
+function initGodGame3DWorld() {
+    
+    // Prevent duplicate canvas
+    if (window.godgameRenderer) return;
+
+    // Create renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(600, 400);
+    renderer.setClearColor(0x000010, 1);
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.margin = '24px auto 0 auto';
+    renderer.domElement.style.borderRadius = '16px';
+    renderer.domElement.style.boxShadow = '0 4px 24px #000a';
+    renderer.domElement.id = 'godgame-3d-canvas';
+
+    // Insert canvas into modal (top of modal content)
+    const modalContent = godgameModal.querySelector('div');
+    modalContent.insertBefore(renderer.domElement, modalContent.firstChild);
+
+    // Scene, camera, controls
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 600 / 400, 0.1, 1000);
+    camera.position.set(0, 8, 22);
+
+    // Lighting
+    const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambient);
+
+    // --- Stars background ---
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 800;
+    const starVertices = [];
+    for (let i = 0; i < starCount; i++) {
+        const x = (Math.random() - 0.5) * 120;
+        const y = (Math.random() - 0.5) * 80;
+        const z = -Math.random() * 100 - 10;
+        starVertices.push(x, y, z);
+    }
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    // --- Sun (Star) ---
+    const sunGeo = new THREE.SphereGeometry(2.5, 32, 32);
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffe066, emissive: 0xffe066 });
+    const sun = new THREE.Mesh(sunGeo, sunMat);
+    sun.position.set(0, 0, 0);
+    scene.add(sun);
+
+    
+    // --- Sea (Animated Water Sphere) ---
+    // The "sea" is a blue transparent sphere around Aurelia, animated with a wave effect
+    let seaMesh, seaTime = 0;
+    function createSea(planetMesh) {
+        const seaGeo = new THREE.SphereGeometry(planetMesh.geometry.parameters.radius + 0.12, 32, 32);
+        const seaMat = new THREE.MeshPhongMaterial({
+            color: 0x2196f3,
+            transparent: true,
+            opacity: 0.45,
+            shininess: 100,
+            emissive: 0x1565c0,
+            specular: 0x90caf9
+        });
+        seaMesh = new THREE.Mesh(seaGeo, seaMat);
+        seaMesh.position.copy(planetMesh.position);
+        scene.add(seaMesh);
+    }
+
+    // --- Planets & Moons ---
+    const planets = [];
+    const planetData = [
+        {
+            name: "Aurelia",
+            color: 0x4fc3f7,
+            size: 1.1,
+            distance: 6,
+            speed: 0.008,
+            moons: [
+                { name: "Lunara", color: 0xbdbdbd, size: 0.3, distance: 1.7, speed: 0.03 }
+            ],
+            myth: "Aurelia, the Water World, is said to be the cradle of life, watched over by the moon goddess Lunara."
+        },
+        {
+            name: "Pyrrhos",
+            color: 0xff7043,
+            size: 1.4,
+            distance: 10,
+            speed: 0.005,
+            moons: [],
+            myth: "Pyrrhos, the Fire Giant, is the forge of the gods, its flames fueling the stars."
+        },
+        {
+            name: "Verdantis",
+            color: 0x81c784,
+            size: 1.2,
+            distance: 14,
+            speed: 0.003,
+            moons: [
+                { name: "Sylva", color: 0x9ccc65, size: 0.4, distance: 2.1, speed: 0.018 },
+                { name: "Umbra", color: 0x616161, size: 0.25, distance: 1.3, speed: 0.027 }
+            ],
+            myth: "Verdantis, the Green World, is the realm of growth and shadow, its twin moons Sylva and Umbra locked in eternal dance."
+        }
+    ];
+
+    planetData.forEach((pdata, i) => {
+        const geo = new THREE.SphereGeometry(pdata.size, 24, 24);
+        const mat = new THREE.MeshPhongMaterial({ color: pdata.color });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.userData = { ...pdata, angle: Math.random() * Math.PI * 2 };
+        scene.add(mesh);
+
+        // Moons
+        mesh.userData.moonMeshes = [];
+        pdata.moons.forEach((m, mi) => {
+            const mgeo = new THREE.SphereGeometry(m.size, 16, 16);
+            const mmat = new THREE.MeshPhongMaterial({ color: m.color });
+            const mmesh = new THREE.Mesh(mgeo, mmat);
+            mmesh.userData = { ...m, angle: Math.random() * Math.PI * 2 };
+            scene.add(mmesh);
+            mesh.userData.moonMeshes.push(mmesh);
+        });
+
+        planets.push(mesh);
+          // Add sea to Aurelia
+        if (pdata.name === "Aurelia") createSea(mesh);
+    });
+
+    // --- Mythology/Concept Text ---
+    let mythDiv = document.getElementById('godgame-myth');
+     if (!mythDiv) {
+        mythDiv = document.createElement('div');
+        mythDiv.id = 'godgame-myth';
+        mythDiv.style.position = 'absolute';
+        mythDiv.style.top = '32px';
+        mythDiv.style.left = '50%';
+        mythDiv.style.transform = 'translateX(-50%)';
+        mythDiv.style.background = 'rgba(20,20,40,0.92)';
+        mythDiv.style.color = '#ffd740';
+        mythDiv.style.padding = '12px 24px';
+        mythDiv.style.borderRadius = '10px';
+        mythDiv.style.fontSize = '1.1em';
+        mythDiv.style.maxWidth = '90%';
+        mythDiv.style.zIndex = 10001;
+        mythDiv.style.textAlign = 'center';
+        mythDiv.style.pointerEvents = 'none';
+        godgameModal.appendChild(mythDiv);
+    }
+    mythDiv.innerHTML = "Hover planets for their myth.";
+    // --- Raycaster for planet hover ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    renderer.domElement.addEventListener('mousemove', (event) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    });
+
+    // --- Animation Loop ---
+    function animateSolarSystem() {
+           seaTime += 0.03;
+        // Orbit planets
+        planets.forEach((planet, i) => {
+            const d = planet.userData.distance;
+            planet.userData.angle += planet.userData.speed;
+            planet.position.x = Math.cos(planet.userData.angle) * d;
+            planet.position.z = Math.sin(planet.userData.angle) * d;
+
+            // Orbit moons
+            planet.userData.moonMeshes.forEach((moon, mi) => {
+                const md = moon.userData.distance;
+                moon.userData.angle += moon.userData.speed;
+                moon.position.x = planet.position.x + Math.cos(moon.userData.angle) * md;
+                moon.position.z = planet.position.z + Math.sin(moon.userData.angle) * md;
+                moon.position.y = planet.position.y + Math.sin(moon.userData.angle) * 0.5;
+            });
+            
+            // Animate sea around Aurelia
+            if (planet.userData.name === "Aurelia" && seaMesh) {
+                seaMesh.position.copy(planet.position);
+                // Animate sea "waves" by modifying vertices
+                const geo = seaMesh.geometry;
+                for (let v = 0; v < geo.attributes.position.count; v++) {
+                    const orig = geo.attributes.position.getY(v);
+                    const theta = geo.attributes.position.getX(v) + geo.attributes.position.getZ(v);
+                    geo.attributes.position.setY(v,
+                        orig + Math.sin(seaTime + theta * 2) * 0.04
+                    );
+                }
+                geo.attributes.position.needsUpdate = true;
+                seaMesh.rotation.y += 0.002;
+            }
+        });
+
+
+        // Raycast for myth display
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(planets, false);
+        if (intersects.length > 0) {
+            const p = intersects[0].object.userData;
+            mythDiv.innerHTML = `<b>${p.name}</b>: ${p.myth}`;
+        } else {
+            mythDiv.innerHTML = "Hover planets for their myth.";
+        }
+
+        renderer.render(scene, camera);
+        window.godgame3DAnimId = requestAnimationFrame(animateSolarSystem);
+    }
+    animateSolarSystem();
+
+    // Store renderer for cleanup
+    window.godgameRenderer = renderer;
+    // Clean up on modal close
+    godgameModal.addEventListener('close', () => {
+        renderer.dispose && renderer.dispose();
+        renderer.domElement.remove();
+        window.godgameRenderer = null;
+        cancelAnimationFrame(window.godgame3DAnimId);
+        if (mythDiv) mythDiv.remove();
+    });
+}
+// ...existing code...
+
+        // Initialize God Game demo state when modal opens
+        document.getElementById('btn-godgame').addEventListener('click', () => {
+            updateWorldState();
+            document.getElementById('eventLog').innerHTML = '';
+            logEvent('World created. Awaiting your divine intervention...');
+        });
+
+    </script>
+</body>
+
+</html>

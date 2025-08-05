@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RE_start OS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+        body {
+            font-family: 'Share Tech Mono', monospace; /* Monospaced font for hacker feel */
+            background-color: #0d1117; /* Dark background */
+            color: #0f0; /* Green text */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Hide scrollbars */
+        }
+
+        .os-container {
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            background-color: #161b22; /* Slightly lighter dark background for container */
+            border: 2px solid #0f0; /* Green border */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); /* Green glow */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .boot-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #0d1117;
+            z-index: 100;
+            transition: opacity 1s ease-out;
+        }
+
+        .boot-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .binary-display {
+            font-size: 2.5rem;
+            white-space: pre; /* Preserve whitespace for binary display */
+            overflow: hidden;
+            border-right: .15em solid #0f0; /* Typing cursor effect */
+            animation: typing 3s steps(40, end), blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #0f0; }
+        }
+
+        .loading-bar-container {
+            width: 80%;
+            height: 20px;
+            background-color: #333;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #0f0;
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+
+        .console-output {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            border-bottom: 1px solid #0f0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            scrollbar-width: thin;
+            scrollbar-color: #0f0 #161b22;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background-color: #0f0;
+            border-radius: 4px;
+            border: 2px solid #161b22;
+        }
+
+        .console-input-area {
+            display: flex;
+            padding: 10px 15px;
+            background-color: #0d1117;
+            border-top: 1px solid #0f0;
+        }
+
+        .console-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #0f0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            padding-right: 10px;
+        }
+
+        .prompt {
+            color: #0f0;
+            margin-right: 5px;
+        }
+
+        .message-info { color: #00ff00; } /* Green */
+        .message-warning { color: #ffff00; } /* Yellow */
+        .message-error { color: #ff0000; } /* Red */
+        .message-success { color: #00ffff; } /* Cyan */
+        .message-user-input { color: #88ff88; } /* Light green for user input */
+        .message-output { color: #0f0; } /* Default green for command output */
+        .message-api { color: #ffa500; } /* Orange for API calls */
+        .message-memory { color: #ff69b4; } /* Hot pink for memory */
+        .message-network { color: #00bfff; } /* Deep sky blue for network */
+        .message-encryption { color: #ff00ff; } /* Magenta for encryption */
+        .message-toolkit { color: #ff8c00; } /* Dark orange for toolkit */
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .binary-display {
+                font-size: 1.5rem;
+            }
+            .console-output, .console-input {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="os-container">
+        <!-- Boot Screen -->
+        <div id="bootScreen" class="boot-screen">
+            <div class="text-xl text-green-400 mb-4">
+                <span class="animate-pulse">BOOTING RE_start OS...</span>
+            </div>
+            <div id="binaryOsName" class="binary-display"></div>
+            <div class="loading-bar-container mt-8">
+                <div id="loadingBar" class="loading-bar"></div>
+            </div>
+        </div>
+
+        <!-- Main OS Console -->
+        <div id="osConsole" class="hidden h-full flex flex-col">
+            <div id="consoleOutput" class="console-output">
+                <!-- Output will be appended here by JavaScript -->
+            </div>
+            <div class="console-input-area">
+                <span class="prompt">RE_start@root:~#</span>
+                <input type="text" id="consoleInput" class="console-input" autofocus autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for Firebase configuration and app ID (provided by the Canvas environment)
+        // These are placeholders and will be populated by the Canvas environment at runtime.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Utility function to convert text to binary
+        function textToBinary(text) {
+            return text.split('').map(char => {
+                // Get the ASCII value of the character
+                const ascii = char.charCodeAt(0);
+                // Convert ASCII to binary and pad with leading zeros to 8 bits
+                return ascii.toString(2).padStart(8, '0');
+            }).join(' '); // Join with space for readability
+        }
+
+        // DOM Elements
+        const bootScreen = document.getElementById('bootScreen');
+        const binaryOsName = document.getElementById('binaryOsName');
+        const loadingBar = document.getElementById('loadingBar');
+        const osConsole = document.getElementById('osConsole');
+        const consoleOutput = document.getElementById('consoleOutput');
+        const consoleInput = document.getElementById('consoleInput');
+
+        // RE_start OS Core Simulation
+        const RE_startOS = {
+            name: "RE_start",
+            version: "1.0.0-beta",
+            status: "Offline",
+            processes: [],
+            drivers: [],
+            filesystem: {
+                '/': {
+                    type: 'directory',
+                    children: {
+                        'bin': { type: 'directory', children: {
+                            'ls': { type: 'file', content: 'Executable: list directory contents' },
+                            'cat': { type: 'file', content: 'Executable: concatenate and print files' },
+                            'ps': { type: 'file', content: 'Executable: report a snapshot of the current processes' },
+                            'kill': { type: 'file', content: 'Executable: send a signal to a process' },
+                            'mkdir': { type: 'file', content: 'Executable: make directories' },
+                            'rm': { type: 'file', content: 'Executable: remove files or directories' },
+                            'touch': { type: 'file', content: 'Executable: change file timestamps / create new files' }
+                        }},
+                        'etc': { type: 'directory', children: {
+                            'passwd': { type: 'file', content: 'root:x:0:0:root:/root:/bin/bash\nguest:x:1000:1000:Guest User:/home/guest:/bin/bash' },
+                            'network.conf': { type: 'file', content: 'IP=192.168.1.1\nDNS=8.8.8.8' }
+                        }},
+                        'home': { type: 'directory', children: {
+                            'guest': { type: 'directory', children: {
+                                'welcome.txt': { type: 'file', content: 'Welcome to RE_start OS! Use `help` for commands.' }
+                            }}
+                        }},
+                        'var': { type: 'directory', children: {
+                            'log': { type: 'directory', children: {
+                                'syslog': { type: 'file', content: 'System initialized at ' + new Date().toLocaleString() }
+                            }}
+                        }},
+                        'root': { type: 'directory', children: {
+                            'secret_plans.txt': { type: 'file', content: 'Operation Chimera: Phase 1 - Reconnaissance complete. Phase 2 - Exploit development in progress.' }
+                        }}
+                    }
+                }
+            },
+            memory: {
+                total: 4096, // Simulated total memory in MB
+                used: 0,
+                regions: [] // { start, end, size, owner, protected }
+            },
+            currentMode: 'kernel', // 'kernel' or 'user'
+            network: {
+                connections: [], // { id, target, status }
+                packetsSent: 0
+            },
+            encryptionModules: {
+                'xor_cipher': {
+                    encrypt: (data, key) => data.split('').map(char => String.fromCharCode(char.charCodeAt(0) ^ key)).join(''),
+                    decrypt: (data, key) => data.split('').map(char => String.fromCharCode(char.charCodeAt(0) ^ key)).join('')
+                },
+                'rot13': {
+                    encrypt: (data) => data.replace(/[a-zA-Z]/g, function(c){
+                        return String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26);
+                    }),
+                    decrypt: (data) => data.replace(/[a-zA-Z]/g, function(c){
+                        return String.fromCharCode((c<="Z"?90:122)<=(c=c.charCodeAt(0)-13)?c:c+26);
+                    })
+                }
+            },
+            penTestingToolkit: {
+                'nmap_scan': (target) => `Simulating Nmap scan on ${target}... Open ports: 22, 80, 443.`,
+                'metasploit_exploit': (target, exploit) => `Attempting to exploit ${target} with ${exploit}... Result: ${Math.random() > 0.5 ? 'Success!' : 'Failed.'}`,
+                'john_crack': (hash) => `Cracking hash ${hash}... Found password: "password123".`,
+                'wireshark_capture': () => `Capturing network traffic... (Simulated 10 packets captured)`,
+                'sqlmap_inject': (url) => `Attempting SQL injection on ${url}... Result: ${Math.random() > 0.3 ? 'Vulnerable!' : 'Not vulnerable.'}`
+            },
+
+            // --- Core OS Functions ---
+
+            init: function() {
+                this.status = "Online";
+                this.displayMessage(`RE_start OS ${this.version} initialized.`, 'info');
+                this.displayMessage(`Current mode: ${this.currentMode}`, 'info');
+                this.displayMessage(`Type 'help' for a list of commands.`, 'info');
+            },
+
+            displayMessage: function(message, type = 'info') {
+                const p = document.createElement('p');
+                p.className = `message-${type}`;
+                p.textContent = message;
+                consoleOutput.appendChild(p);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight; // Auto-scroll to bottom
+            },
+
+            bootSequence: function() {
+                const osNameBinary = textToBinary(this.name);
+                let i = 0;
+                const typingSpeed = 50; // ms per character
+
+                // Simulate typing effect for binary OS name
+                const typeBinary = () => {
+                    if (i < osNameBinary.length) {
+                        binaryOsName.textContent += osNameBinary.charAt(i);
+                        i++;
+                        setTimeout(typeBinary, typingSpeed);
+                    } else {
+                        // Start loading bar after typing
+                        this.simulateLoading();
+                    }
+                };
+                typeBinary();
+            },
+
+            simulateLoading: function() {
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 5; // Random increment
+                    if (progress > 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            bootScreen.classList.add('hidden');
+                            osConsole.classList.remove('hidden');
+                            this.init(); // Initialize the OS after boot
+                            consoleInput.focus(); // Focus input after boot
+                        }, 500); // Small delay before hiding boot screen
+                    }
+                    loadingBar.style.width = progress + '%';
+                }, 100);
+            },
+
+            // --- Process Management ---
+
+            _processIdCounter: 0,
+            createProcess: function(name, status = 'running') {
+                const pid = ++this._processIdCounter;
+                const newProcess = { id: pid, name: name, status: status, memoryUsage: Math.floor(Math.random() * 50) + 10 };
+                this.processes.push(newProcess);
+                this.displayMessage(`Process '${name}' (PID: ${pid}) created.`, 'success');
+                return newProcess;
+            },
+
+            killProcess: function(pid) {
+                const index = this.processes.findIndex(p => p.id === parseInt(pid));
+                if (index !== -1) {
+                    const killedProcess = this.processes.splice(index, 1)[0];
+                    this.displayMessage(`Process '${killedProcess.name}' (PID: ${killedProcess.id}) terminated.`, 'success');
+                } else {
+                    this.displayMessage(`Error: Process with PID ${pid} not found.`, 'error');
+                }
+            },
+
+            listProcesses: function() {
+                if (this.processes.length === 0) {
+                    this.displayMessage('No active processes.', 'info');
+                    return;
+                }
+                this.displayMessage('PID\tName\t\tStatus\tMemory (MB)', 'output');
+                this.displayMessage('------------------------------------------------', 'output');
+                this.processes.forEach(p => {
+                    this.displayMessage(`${p.id}\t${p.name.padEnd(15)}\t${p.status.padEnd(8)}\t${p.memoryUsage}`, 'output');
+                });
+            },
+
+            // --- Basic Drivers (Simulated) ---
+
+            loadDriver: function(driverName) {
+                if (!this.drivers.includes(driverName)) {
+                    this.drivers.push(driverName);
+                    this.displayMessage(`Driver '${driverName}' loaded successfully.`, 'success');
+                } else {
+                    this.displayMessage(`Driver '${driverName}' is already loaded.`, 'warning');
+                }
+            },
+
+            unloadDriver: function(driverName) {
+                const index = this.drivers.indexOf(driverName);
+                if (index !== -1) {
+                    this.drivers.splice(index, 1);
+                    this.displayMessage(`Driver '${driverName}' unloaded.`, 'success');
+                } else {
+                    this.displayMessage(`Error: Driver '${driverName}' not found.`, 'error');
+                }
+            },
+
+            listDrivers: function() {
+                if (this.drivers.length === 0) {
+                    this.displayMessage('No drivers loaded.', 'info');
+                    return;
+                }
+                this.displayMessage('Loaded Drivers:', 'output');
+                this.drivers.forEach(d => this.displayMessage(`- ${d}`, 'output'));
+            },
+
+            // --- System APIs (Simulated) ---
+
+            callAPI: function(apiName, args = {}) {
+                this.displayMessage(`API Call: ${apiName}(${JSON.stringify(args)})`, 'api');
+                switch (apiName) {
+                    case 'sys_time':
+                        this.displayMessage(`System Time: ${new Date().toLocaleString()}`, 'api');
+                        break;
+                    case 'sys_info':
+                        this.displayMessage(`OS: ${this.name} v${this.version}`, 'api');
+                        this.displayMessage(`Status: ${this.status}`, 'api');
+                        this.displayMessage(`Memory: ${this.memory.used}/${this.memory.total} MB`, 'api');
+                        break;
+                    case 'sys_reboot':
+                        this.displayMessage('Initiating system reboot...', 'warning');
+                        setTimeout(() => location.reload(), 2000); // Reload page to simulate reboot
+                        break;
+                    default:
+                        this.displayMessage(`Error: Unknown API '${apiName}'.`, 'error');
+                }
+            },
+
+            // --- Filesystem Support ---
+
+            _currentPath: '/',
+
+            _resolvePath: function(path) {
+                if (path.startsWith('/')) return path; // Absolute path
+                const parts = this._currentPath.split('/').filter(p => p !== '');
+                path.split('/').filter(p => p !== '').forEach(part => {
+                    if (part === '..') {
+                        if (parts.length > 0) parts.pop();
+                    } else if (part !== '.') {
+                        parts.push(part);
+                    }
+                });
+                return '/' + parts.join('/');
+            },
+
+            _traversePath: function(path, createIfMissing = false, isDirectory = false) {
+                const parts = path.split('/').filter(p => p !== '');
+                let current = this.filesystem['/'];
+                let currentPath = '/';
+
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (!current.children || !current.children[part]) {
+                        if (createIfMissing && i === parts.length - 1) {
+                            if (isDirectory) {
+                                current.children[part] = { type: 'directory', children: {} };
+                            } else {
+                                current.children[part] = { type: 'file', content: '' };
+                            }
+                        } else {
+                            return null; // Path not found
+                        }
+                    }
+                    current = current.children[part];
+                    currentPath = this._resolvePath(currentPath + '/' + part);
+                }
+                return current;
+            },
+
+            ls: function(path = '.') {
+                const targetPath = this._resolvePath(path);
+                const node = this._traversePath(targetPath);
+
+                if (!node) {
+                    this.displayMessage(`Error: Path '${targetPath}' not found.`, 'error');
+                    return;
+                }
+                if (node.type !== 'directory') {
+                    this.displayMessage(`Error: '${targetPath}' is not a directory.`, 'error');
+                    return;
+                }
+
+                if (Object.keys(node.children).length === 0) {
+                    this.displayMessage(`Directory '${targetPath}' is empty.`, 'output');
+                    return;
+                }
+
+                this.displayMessage(`Contents of '${targetPath}':`, 'output');
+                for (const name in node.children) {
+                    const item = node.children[name];
+                    this.displayMessage(`${item.type === 'directory' ? '[DIR]' : '[FIL]'} ${name}`, 'output');
+                }
+            },
+
+            cat: function(filePath) {
+                const targetPath = this._resolvePath(filePath);
+                const node = this._traversePath(targetPath);
+
+                if (!node) {
+                    this.displayMessage(`Error: File '${targetPath}' not found.`, 'error');
+                    return;
+                }
+                if (node.type !== 'file') {
+                    this.displayMessage(`Error: '${targetPath}' is a directory. Use 'ls' instead.`, 'error');
+                    return;
+                }
+                this.displayMessage(`--- Content of '${targetPath}' ---`, 'output');
+                this.displayMessage(node.content, 'output');
+                this.displayMessage(`-----------------------------------`, 'output');
+            },
+
+            mkdir: function(dirPath) {
+                const targetPath = this._resolvePath(dirPath);
+                const parentPath = targetPath.substring(0, targetPath.lastIndexOf('/')) || '/';
+                const dirName = targetPath.substring(targetPath.lastIndexOf('/') + 1);
+
+                const parentNode = this._traversePath(parentPath);
+                if (!parentNode || parentNode.type !== 'directory') {
+                    this.displayMessage(`Error: Parent directory '${parentPath}' not found or is not a directory.`, 'error');
+                    return;
+                }
+                if (parentNode.children[dirName]) {
+                    this.displayMessage(`Error: Directory '${dirName}' already exists in '${parentPath}'.`, 'error');
+                    return;
+                }
+
+                parentNode.children[dirName] = { type: 'directory', children: {} };
+                this.displayMessage(`Directory '${targetPath}' created.`, 'success');
+            },
+
+            rm: function(path) {
+                const targetPath = this._resolvePath(path);
+                const parentPath = targetPath.substring(0, targetPath.lastIndexOf('/')) || '/';
+                const itemName = targetPath.substring(targetPath.lastIndexOf('/') + 1);
+
+                const parentNode = this._traversePath(parentPath);
+                if (!parentNode || parentNode.type !== 'directory') {
+                    this.displayMessage(`Error: Cannot remove '${targetPath}'. Parent directory not found.`, 'error');
+                    return;
+                }
+                if (!parentNode.children[itemName]) {
+                    this.displayMessage(`Error: '${targetPath}' not found.`, 'error');
+                    return;
+                }
+
+                const nodeToRemove = parentNode.children[itemName];
+                if (nodeToRemove.type === 'directory' && Object.keys(nodeToRemove.children).length > 0) {
+                    this.displayMessage(`Error: Cannot remove non-empty directory '${targetPath}'.`, 'error');
+                    return;
+                }
+
+                delete parentNode.children[itemName];
+                this.displayMessage(`Removed '${targetPath}'.`, 'success');
+            },
+
+            touch: function(filePath) {
+                const targetPath = this._resolvePath(filePath);
+                const parentPath = targetPath.substring(0, targetPath.lastIndexOf('/')) || '/';
+                const fileName = targetPath.substring(targetPath.lastIndexOf('/') + 1);
+
+                const parentNode = this._traversePath(parentPath);
+                if (!parentNode || parentNode.type !== 'directory') {
+                    this.displayMessage(`Error: Parent directory '${parentPath}' not found or is not a directory.`, 'error');
+                    return;
+                }
+                if (parentNode.children[fileName] && parentNode.children[fileName].type === 'file') {
+                    this.displayMessage(`File '${targetPath}' already exists. Updating timestamp (simulated).`, 'warning');
+                    // In a real system, update mtime/atime
+                } else if (parentNode.children[fileName] && parentNode.children[fileName].type === 'directory') {
+                    this.displayMessage(`Error: Cannot touch a directory '${targetPath}'.`, 'error');
+                } else {
+                    parentNode.children[fileName] = { type: 'file', content: '' };
+                    this.displayMessage(`File '${targetPath}' created.`, 'success');
+                }
+            },
+
+            cd: function(path) {
+                const newPath = this._resolvePath(path);
+                const node = this._traversePath(newPath);
+
+                if (!node) {
+                    this.displayMessage(`Error: Path '${newPath}' not found.`, 'error');
+                    return;
+                }
+                if (node.type !== 'directory') {
+                    this.displayMessage(`Error: '${newPath}' is not a directory.`, 'error');
+                    return;
+                }
+                this._currentPath = newPath;
+                this.displayMessage(`Changed directory to '${this._currentPath}'.`, 'info');
+                document.querySelector('.prompt').textContent = `RE_start@root:${this._currentPath}#`;
+            },
+
+            pwd: function() {
+                this.displayMessage(this._currentPath, 'output');
+            },
+
+            // --- Memory Protection (Simulated) ---
+
+            allocateMemory: function(size, owner = 'system', protected = false) {
+                if (this.memory.used + size > this.memory.total) {
+                    this.displayMessage(`Error: Not enough memory to allocate ${size} MB.`, 'error');
+                    return null;
+                }
+                const start = this.memory.used;
+                const end = start + size - 1;
+                const region = { start, end, size, owner, protected };
+                this.memory.regions.push(region);
+                this.memory.used += size;
+                this.displayMessage(`Allocated ${size} MB for '${owner}' from ${start} to ${end}. Protected: ${protected}`, 'memory');
+                return region;
+            },
+
+            freeMemory: function(startAddress) {
+                const index = this.memory.regions.findIndex(r => r.start === startAddress);
+                if (index !== -1) {
+                    const freedRegion = this.memory.regions.splice(index, 1)[0];
+                    this.memory.used -= freedRegion.size;
+                    this.displayMessage(`Freed ${freedRegion.size} MB from address ${freedRegion.start}.`, 'memory');
+                } else {
+                    this.displayMessage(`Error: Memory region at ${startAddress} not found.`, 'error');
+                }
+            },
+
+            accessMemory: function(address) {
+                const region = this.memory.regions.find(r => address >= r.start && address <= r.end);
+                if (region) {
+                    if (region.protected && this.currentMode === 'user') {
+                        this.displayMessage(`Memory Protection Fault! Attempted user-mode access to protected memory at ${address} (Region: ${region.owner}).`, 'error');
+                        return false;
+                    }
+                    this.displayMessage(`Accessed memory at ${address} (Region: ${region.owner}).`, 'memory');
+                    return true;
+                } else {
+                    this.displayMessage(`Error: Invalid memory address ${address}.`, 'error');
+                    return false;
+                }
+            },
+
+            listMemory: function() {
+                this.displayMessage(`Total Memory: ${this.memory.total} MB, Used: ${this.memory.used} MB, Free: ${this.memory.total - this.memory.used} MB`, 'memory');
+                if (this.memory.regions.length === 0) {
+                    this.displayMessage('No memory regions allocated.', 'info');
+                    return;
+                }
+                this.displayMessage('Memory Regions:', 'memory');
+                this.memory.regions.forEach(r => {
+                    this.displayMessage(`- Start: ${r.start}, End: ${r.end}, Size: ${r.size} MB, Owner: ${r.owner}, Protected: ${r.protected}`, 'memory');
+                });
+            },
+
+            // --- User/Kernel Mode Separation ---
+
+            switchMode: function(mode) {
+                if (mode === 'user' || mode === 'kernel') {
+                    this.currentMode = mode;
+                    this.displayMessage(`Switched to ${mode} mode.`, 'info');
+                } else {
+                    this.displayMessage(`Error: Invalid mode '${mode}'. Use 'user' or 'kernel'.`, 'error');
+                }
+            },
+
+            // --- Network Stack (Simulated) ---
+
+            _connectionIdCounter: 0,
+            establishConnection: function(target) {
+                const connId = ++this._connectionIdCounter;
+                const newConnection = { id: connId, target: target, status: 'connecting' };
+                this.network.connections.push(newConnection);
+                this.displayMessage(`Attempting to connect to ${target}...`, 'network');
+                setTimeout(() => {
+                    newConnection.status = 'connected';
+                    this.displayMessage(`Connection to ${target} (ID: ${connId}) established.`, 'success');
+                }, 1500 + Math.random() * 1000); // Simulate connection delay
+                return newConnection;
+            },
+
+            sendPacket: function(connectionId, data) {
+                const connection = this.network.connections.find(c => c.id === parseInt(connectionId));
+                if (connection && connection.status === 'connected') {
+                    this.network.packetsSent++;
+                    this.displayMessage(`Sending packet via connection ${connectionId} to ${connection.target}: "${data.substring(0, 30)}..."`, 'network');
+                    setTimeout(() => {
+                        this.displayMessage(`Packet sent successfully. Total packets: ${this.network.packetsSent}`, 'success');
+                    }, 500 + Math.random() * 500);
+                } else {
+                    this.displayMessage(`Error: Connection ${connectionId} not found or not connected.`, 'error');
+                }
+            },
+
+            listConnections: function() {
+                if (this.network.connections.length === 0) {
+                    this.displayMessage('No active network connections.', 'info');
+                    return;
+                }
+                this.displayMessage('Active Network Connections:', 'network');
+                this.network.connections.forEach(c => {
+                    this.displayMessage(`- ID: ${c.id}, Target: ${c.target}, Status: ${c.status}`, 'network');
+                });
+            },
+
+            // --- Encryption Modules ---
+
+            encrypt: function(moduleName, data, key = 0) {
+                const module = this.encryptionModules[moduleName];
+                if (module) {
+                    const encryptedData = module.encrypt(data, key);
+                    this.displayMessage(`Encrypted data using ${moduleName}: "${encryptedData.substring(0, 50)}..."`, 'encryption');
+                    return encryptedData;
+                } else {
+                    this.displayMessage(`Error: Encryption module '${moduleName}' not found. Available: ${Object.keys(this.encryptionModules).join(', ')}`, 'error');
+                    return null;
+                }
+            },
+
+            decrypt: function(moduleName, data, key = 0) {
+                const module = this.encryptionModules[moduleName];
+                if (module) {
+                    const decryptedData = module.decrypt(data, key);
+                    this.displayMessage(`Decrypted data using ${moduleName}: "${decryptedData.substring(0, 50)}..."`, 'encryption');
+                    return decryptedData;
+                } else {
+                    this.displayMessage(`Error: Encryption module '${moduleName}' not found. Available: ${Object.keys(this.encryptionModules).join(', ')}`, 'error');
+                    return null;
+                }
+            },
+
+            listEncryptionModules: function() {
+                this.displayMessage(`Available Encryption Modules: ${Object.keys(this.encryptionModules).join(', ')}`, 'encryption');
+            },
+
+            // --- Penetration Testing Toolkit ---
+
+            runPenTestTool: function(toolName, ...args) {
+                const tool = this.penTestingToolkit[toolName];
+                if (tool) {
+                    this.displayMessage(`Running penetration testing tool: ${toolName}...`, 'toolkit');
+                    const result = tool(...args);
+                    this.displayMessage(`Tool Output: ${result}`, 'toolkit');
+                } else {
+                    this.displayMessage(`Error: Penetration testing tool '${toolName}' not found. Available: ${Object.keys(this.penTestingToolkit).join(', ')}`, 'error');
+                }
+            },
+
+            listPenTestTools: function() {
+                this.displayMessage(`Available Penetration Testing Tools: ${Object.keys(this.penTestingToolkit).join(', ')}`, 'toolkit');
+            },
+
+            // --- Command Execution ---
+
+            executeCommand: function(command) {
+                this.displayMessage(`RE_start@root:${this._currentPath}# ${command}`, 'message-user-input');
+                const parts = command.trim().split(/\s+/);
+                const cmd = parts[0];
+                const args = parts.slice(1);
+
+                switch (cmd) {
+                    case 'help':
+                        this.displayMessage('Available Commands:', 'info');
+                        this.displayMessage('  help - Display this help message.', 'info');
+                        this.displayMessage('  clear - Clear the console.', 'info');
+                        this.displayMessage('  status - Show OS status.', 'info');
+                        this.displayMessage('  ps - List active processes.', 'info');
+                        this.displayMessage('  run <name> - Simulate running a new process.', 'info');
+                        this.displayMessage('  kill <pid> - Terminate a process by PID.', 'info');
+                        this.displayMessage('  load_driver <name> - Load a simulated driver.', 'info');
+                        this.displayMessage('  unload_driver <name> - Unload a simulated driver.', 'info');
+                        this.displayMessage('  ls_drivers - List loaded drivers.', 'info');
+                        this.displayMessage('  api <name> [args] - Call a simulated system API (e.g., api sys_time).', 'info');
+                        this.displayMessage('  ls [path] - List directory contents.', 'info');
+                        this.displayMessage('  cat <file> - Display file content.', 'info');
+                        this.displayMessage('  mkdir <path> - Create a new directory.', 'info');
+                        this.displayMessage('  rm <path> - Remove a file or empty directory.', 'info');
+                        this.displayMessage('  touch <file> - Create an empty file or update timestamp.', 'info');
+                        this.displayMessage('  cd <path> - Change current directory.', 'info');
+                        this.displayMessage('  pwd - Print working directory.', 'info');
+                        this.displayMessage('  alloc_mem <size> [owner] [protected] - Allocate simulated memory.', 'info');
+                        this.displayMessage('  free_mem <address> - Free simulated memory.', 'info');
+                        this.displayMessage('  access_mem <address> - Access simulated memory.', 'info');
+                        this.displayMessage('  ls_mem - List allocated memory regions.', 'info');
+                        this.displayMessage('  mode <user|kernel> - Switch user/kernel mode.', 'info');
+                        this.displayMessage('  connect <target> - Establish simulated network connection.', 'info');
+                        this.displayMessage('  send <conn_id> <data> - Send data over connection.', 'info');
+                        this.displayMessage('  ls_conn - List active network connections.', 'info');
+                        this.displayMessage('  encrypt <module> <data> [key] - Encrypt data.', 'info');
+                        this.displayMessage('  decrypt <module> <data> [key] - Decrypt data.', 'info');
+                        this.displayMessage('  ls_crypto - List encryption modules.', 'info');
+                        this.displayMessage('  pentest <tool> [args] - Run a penetration testing tool.', 'info');
+                        this.displayMessage('  ls_pentest - List penetration testing tools.', 'info');
+                        break;
+                    case 'clear':
+                        consoleOutput.innerHTML = '';
+                        break;
+                    case 'status':
+                        this.displayMessage(`OS Name: ${this.name}`, 'output');
+                        this.displayMessage(`Version: ${this.version}`, 'output');
+                        this.displayMessage(`Status: ${this.status}`, 'output');
+                        this.displayMessage(`Current Mode: ${this.currentMode}`, 'output');
+                        this.displayMessage(`Used Memory: ${this.memory.used}/${this.memory.total} MB`, 'output');
+                        this.displayMessage(`Active Processes: ${this.processes.length}`, 'output');
+                        this.displayMessage(`Loaded Drivers: ${this.drivers.length}`, 'output');
+                        this.displayMessage(`Network Connections: ${this.network.connections.length}`, 'output');
+                        break;
+                    case 'ps':
+                        this.listProcesses();
+                        break;
+                    case 'run':
+                        if (args.length > 0) {
+                            this.createProcess(args[0]);
+                        } else {
+                            this.displayMessage('Usage: run <name>', 'error');
+                        }
+                        break;
+                    case 'kill':
+                        if (args.length > 0) {
+                            this.killProcess(args[0]);
+                        } else {
+                            this.displayMessage('Usage: kill <pid>', 'error');
+                        }
+                        break;
+                    case 'load_driver':
+                        if (args.length > 0) {
+                            this.loadDriver(args[0]);
+                        } else {
+                            this.displayMessage('Usage: load_driver <name>', 'error');
+                        }
+                        break;
+                    case 'unload_driver':
+                        if (args.length > 0) {
+                            this.unloadDriver(args[0]);
+                        } else {
+                            this.displayMessage('Usage: unload_driver <name>', 'error');
+                        }
+                        break;
+                    case 'ls_drivers':
+                        this.listDrivers();
+                        break;
+                    case 'api':
+                        if (args.length > 0) {
+                            const apiName = args[0];
+                            const apiArgs = {};
+                            // Simple parsing for key=value args
+                            for (let i = 1; i < args.length; i++) {
+                                const [key, value] = args[i].split('=');
+                                if (key && value) apiArgs[key] = value;
+                            }
+                            this.callAPI(apiName, apiArgs);
+                        } else {
+                            this.displayMessage('Usage: api <name> [arg1=val1 arg2=val2...]', 'error');
+                        }
+                        break;
+                    case 'ls':
+                        this.ls(args[0]);
+                        break;
+                    case 'cat':
+                        if (args.length > 0) {
+                            this.cat(args[0]);
+                        } else {
+                            this.displayMessage('Usage: cat <file_path>', 'error');
+                        }
+                        break;
+                    case 'mkdir':
+                        if (args.length > 0) {
+                            this.mkdir(args[0]);
+                        } else {
+                            this.displayMessage('Usage: mkdir <directory_path>', 'error');
+                        }
+                        break;
+                    case 'rm':
+                        if (args.length > 0) {
+                            this.rm(args[0]);
+                        } else {
+                            this.displayMessage('Usage: rm <file_or_directory_path>', 'error');
+                        }
+                        break;
+                    case 'touch':
+                        if (args.length > 0) {
+                            this.touch(args[0]);
+                        } else {
+                            this.displayMessage('Usage: touch <file_path>', 'error');
+                        }
+                        break;
+                    case 'cd':
+                        if (args.length > 0) {
+                            this.cd(args[0]);
+                        } else {
+                            this.displayMessage('Usage: cd <path>', 'error');
+                        }
+                        break;
+                    case 'pwd':
+                        this.pwd();
+                        break;
+                    case 'alloc_mem':
+                        if (args.length > 0) {
+                            const size = parseInt(args[0]);
+                            const owner = args[1] || 'user_app';
+                            const protectedMem = args[2] === 'true';
+                            if (!isNaN(size) && size > 0) {
+                                this.allocateMemory(size, owner, protectedMem);
+                            } else {
+                                this.displayMessage('Usage: alloc_mem <size_in_mb> [owner] [protected(true/false)]', 'error');
+                            }
+                        } else {
+                            this.displayMessage('Usage: alloc_mem <size_in_mb> [owner] [protected(true/false)]', 'error');
+                        }
+                        break;
+                    case 'free_mem':
+                        if (args.length > 0) {
+                            const address = parseInt(args[0]);
+                            if (!isNaN(address)) {
+                                this.freeMemory(address);
+                            } else {
+                                this.displayMessage('Usage: free_mem <start_address>', 'error');
+                            }
+                        } else {
+                            this.displayMessage('Usage: free_mem <start_address>', 'error');
+                        }
+                        break;
+                    case 'access_mem':
+                        if (args.length > 0) {
+                            const address = parseInt(args[0]);
+                            if (!isNaN(address)) {
+                                this.accessMemory(address);
+                            } else {
+                                this.displayMessage('Usage: access_mem <address>', 'error');
+                            }
+                        } else {
+                            this.displayMessage('Usage: access_mem <address>', 'error');
+                        }
+                        break;
+                    case 'ls_mem':
+                        this.listMemory();
+                        break;
+                    case 'mode':
+                        if (args.length > 0) {
+                            this.switchMode(args[0]);
+                        } else {
+                            this.displayMessage('Usage: mode <user|kernel>', 'error');
+                        }
+                        break;
+                    case 'connect':
+                        if (args.length > 0) {
+                            this.establishConnection(args[0]);
+                        } else {
+                            this.displayMessage('Usage: connect <target_address>', 'error');
+                        }
+                        break;
+                    case 'send':
+                        if (args.length >= 2) {
+                            const connId = args[0];
+                            const data = args.slice(1).join(' ');
+                            this.sendPacket(connId, data);
+                        } else {
+                            this.displayMessage('Usage: send <connection_id> <data_to_send>', 'error');
+                        }
+                        break;
+                    case 'ls_conn':
+                        this.listConnections();
+                        break;
+                    case 'encrypt':
+                        if (args.length >= 2) {
+                            const module = args[0];
+                            const data = args[1];
+                            const key = parseInt(args[2]) || 0; // Optional key
+                            this.encrypt(module, data, key);
+                        } else {
+                            this.displayMessage('Usage: encrypt <module_name> <data> [key]', 'error');
+                        }
+                        break;
+                    case 'decrypt':
+                        if (args.length >= 2) {
+                            const module = args[0];
+                            const data = args[1];
+                            const key = parseInt(args[2]) || 0; // Optional key
+                            this.decrypt(module, data, key);
+                        } else {
+                            this.displayMessage('Usage: decrypt <module_name> <data> [key]', 'error');
+                        }
+                        break;
+                    case 'ls_crypto':
+                        this.listEncryptionModules();
+                        break;
+                    case 'pentest':
+                        if (args.length > 0) {
+                            const toolName = args[0];
+                            const toolArgs = args.slice(1);
+                            this.runPenTestTool(toolName, ...toolArgs);
+                        } else {
+                            this.displayMessage('Usage: pentest <tool_name> [tool_args...]', 'error');
+                        }
+                        break;
+                    case 'ls_pentest':
+                        this.listPenTestTools();
+                        break;
+                    case '': // Empty command
+                        break;
+                    default:
+                        this.displayMessage(`Error: Command '${cmd}' not found. Type 'help' for commands.`, 'error');
+                }
+            }
+        };
+
+        // Event Listener for Console Input
+        consoleInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const command = consoleInput.value.trim();
+                RE_startOS.executeCommand(command);
+                consoleInput.value = ''; // Clear input field
+            }
+        });
+
+        // Start the OS boot sequence when the window loads
+        window.onload = function() {
+            RE_startOS.bootSequence();
+        };
+
+        // Initial processes and drivers for demonstration
+        RE_startOS.createProcess('kernel_init', 'running');
+        RE_startOS.createProcess('shell', 'running');
+        RE_startOS.createProcess('network_daemon', 'running');
+        RE_startOS.loadDriver('ethernet_driver');
+        RE_startOS.loadDriver('keyboard_driver');
+        RE_startOS.allocateMemory(100, 'kernel_space', true); // Protected kernel memory
+        RE_startOS.allocateMemory(50, 'shell_process');
+    </script>
+</body>
+</html>
