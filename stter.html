@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RE_START: The Digital Genesis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --primary: #0c0c1d;
+            --secondary: #1a1a3a;
+            --accent: #00ff9d;
+            --accent-dark: #00cc7a;
+            --accent-light: #66ffc2;
+            --text: #e0e0ff;
+            --text-secondary: #a0a0c0;
+            --warning: #ff5555;
+            --scrollbar: #00ff9d55;
+            --god-ae: #4d88ff;
+            --god-ve: #ffcc00;
+            --god-ka: #ff66cc;
+            --god-fe: #ff9966;
+            --vector: #ff5555;
+            --kira: #66ffc2;
+            --van-dragon: #ff00cc;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: var(--primary);
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(26, 26, 58, 0.3) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(26, 26, 58, 0.3) 0%, transparent 20%),
+                linear-gradient(to bottom, var(--primary), #000);
+        }
+        
+        .terminal-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: 80px 1fr 80px;
+            height: 100vh;
+            gap: 1px;
+            background: rgba(0, 255, 157, 0.1);
+            position: relative;
+        }
+        
+        #expanse-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.2;
+        }
+        
+        /* Header styles */
+        header {
+            grid-column: 1 / -1;
+            background: rgba(10, 10, 25, 0.9);
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+        
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.7);
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo span {
+            color: var(--text);
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-left: 10px;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { text-shadow: 0 0 5px var(--accent); }
+            50% { text-shadow: 0 0 20px var(--accent); }
+            100% { text-shadow: 0 0 5px var(--accent); }
+        }
+        
+        .header-info {
+            margin-left: auto;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .info-box {
+            background: var(--secondary);
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-box i {
+            color: var(--accent);
+            margin-right: 8px;
+        }
+        
+        /* Sidebar styles */
+        .sidebar {
+            grid-row: 2;
+            background: rgba(10, 10, 25, 0.85);
+            padding: 20px;
+            border-right: 1px solid rgba(0, 255, 157, 0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .sidebar-section {
+            background: rgba(26, 26, 58, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid rgba(0, 255, 157, 0.1);
+        }
+        
+        .sidebar-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-title i {
+            font-size: 1.2rem;
+        }
+        
+        .character-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .character {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 6px;
+            background: rgba(26, 26, 58, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+        
+        .character:hover {
+            background: rgba(26, 26, 58, 0.8);
+            border-color: rgba(0, 255, 157, 0.3);
+        }
+        
+        .character.active {
+            background: rgba(0, 255, 157, 0.1);
+            border-color: var(--accent);
+        }
+        
+        .character-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            border: 2px solid var(--accent);
+            font-size: 1.5rem;
+            position: relative;
+        }
+        
+        .character-status {
+            position: absolute;
+            bottom: -3px;
+            right: -3px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+        }
+        
+        .status-online {
+            background: var(--accent);
+            box-shadow: 0 0 5px var(--accent);
+        }
+        
+        .status-offline {
+            background: var(--text-secondary);
+        }
+        
+        .status-busy {
+            background: var(--warning);
+            box-shadow: 0 0 5px var(--warning);
+        }
+        
+        .character-info h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .character-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .timeline-item {
+            padding: 10px;
+            border-radius: 6px;
+            background: rgba(26, 26, 58, 0.3);
+            border-left: 3px solid var(--accent);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .timeline-item:hover {
+            background: rgba(26, 26, 58, 0.6);
+        }
+        
+        .timeline-item h4 {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .timeline-item p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Chat container styles */
+        .chat-container {
+            grid-row: 2;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.1);
+            background: rgba(10, 10, 25, 0.8);
+            display: flex;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .chat-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+        }
+        
+        .chat-title span {
+            color: var(--accent);
+            text-shadow: 0 0 5px var(--accent);
+        }
+        
+        .chat-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--secondary);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background: var(--accent);
+            color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: rgba(10, 10, 25, 0.2);
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 10px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            background: rgba(26, 26, 58, 0.6);
+            border: 1px solid rgba(0, 255, 157, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message-system {
+            align-self: center;
+            background: rgba(0, 50, 40, 0.5);
+            border-color: rgba(0, 255, 157, 0.3);
+            text-align: center;
+            max-width: 70%;
+            font-style: italic;
+        }
+        
+        .message-left {
+            align-self: flex-start;
+            border-left: 3px solid var(--accent);
+        }
+        
+        .message-right {
+            align-self: flex-end;
+            background: rgba(30, 20, 60, 0.6);
+            border-right: 3px solid var(--kira);
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .message-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 0.9rem;
+            border: 1px solid var(--accent);
+        }
+        
+        .message-sender {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .message-time {
+            margin-left: auto;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .message-content {
+            line-height: 1.6;
+        }
+        
+        .message-content p {
+            margin-bottom: 10px;
+        }
+        
+        .protocol-display {
+            background: rgba(0, 10, 15, 0.8);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        
+        .protocol-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 255, 157, 0.1);
+        }
+        
+        .protocol-title {
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .protocol-lang {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        .protocol-code {
+            white-space: pre;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .chat-input-container {
+            padding: 15px 20px;
+            background: rgba(10, 10, 25, 0.9);
+            border-top: 1px solid rgba(0, 255, 157, 0.1);
+            display: flex;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: rgba(26, 26, 58, 0.6);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 6px;
+            padding: 12px 15px;
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+            resize: none;
+            height: 50px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .chat-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+        }
+        
+        .send-button {
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: 6px;
+            width: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 157, 0.3);
+        }
+        
+        /* Footer styles */
+        footer {
+            grid-column: 1 / -1;
+            background: rgba(10, 10, 25, 0.9);
+            border-top: 1px solid var(--accent);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            backdrop-filter: blur(5px);
+        }
+        
+        .footer-nav {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .footer-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .footer-nav a:hover {
+            color: var(--accent);
+        }
+        
+        .scroll-progress {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+        }
+        
+        .progress-label {
+            min-width: 80px;
+        }
+        
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--secondary);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 45%;
+            background: var(--accent);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: progressShine 2s infinite;
+        }
+        
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* NEW: Van Dragon specific styles */
+        .van-dragon-message {
+            border-left: 3px solid var(--van-dragon);
+            background: rgba(80, 0, 60, 0.3);
+        }
+        
+        .van-dragon-avatar {
+            border-color: var(--van-dragon);
+            background: linear-gradient(45deg, #1a1a3a, #330033);
+        }
+        
+        .van-dragon-text {
+            color: var(--van-dragon);
+            text-shadow: 0 0 5px var(--van-dragon);
+        }
+        
+        .dragon-seed {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--van-dragon);
+            border-radius: 50%;
+            opacity: 0;
+            animation: dragonSeed 3s infinite;
+        }
+        
+        @keyframes dragonSeed {
+            0% { transform: translate(0, 0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(100px, 100px); opacity: 0; }
+        }
+        
+        .reality-glitch {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 204, 0.1);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 100;
+        }
+        
+        /* NEW: Codex terminal */
+        .codex-terminal {
+            position: fixed;
+            bottom: -400px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 350px;
+            background: rgba(10, 10, 25, 0.95);
+            border: 1px solid var(--accent);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            z-index: 1000;
+            transition: bottom 0.5s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .codex-terminal.open {
+            bottom: 0;
+        }
+        
+        .codex-header {
+            padding: 10px 15px;
+            background: rgba(0, 255, 157, 0.1);
+            border-bottom: 1px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .codex-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent);
+        }
+        
+        .codex-close {
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .codex-content {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .codex-input-container {
+            padding: 10px 15px;
+            border-top: 1px solid rgba(0, 255, 157, 0.2);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .codex-input {
+            flex: 1;
+            background: rgba(26, 26, 58, 0.6);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .codex-send {
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: 4px;
+            padding: 0 15px;
+            cursor: pointer;
+        }
+        
+        /* NEW: Reality distortion effect */
+        .reality-distortion {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            background: radial-gradient(circle at center, transparent 30%, rgba(0, 255, 157, 0.1) 70%);
+            mix-blend-mode: overlay;
+        }
+        
+        /* NEW: Matrix rain effect */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+            opacity: 0.1;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 10, 25, 0.5);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+        
+        /* Responsive design */
+        @media (max-width: 900px) {
+            .terminal-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: 80px auto 1fr 80px;
+            }
+            
+            .sidebar {
+                grid-row: 2;
+                grid-column: 1;
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 255, 157, 0.1);
+                max-height: 250px;
+            }
+            
+            .chat-container {
+                grid-row: 3;
+            }
+            
+            .codex-terminal {
+                width: 95%;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .message {
+                max-width: 90%;
+            }
+            
+            .header-info {
+                display: none;
+            }
+            
+            .scroll-progress {
+                min-width: auto;
+            }
+            
+            .progress-label {
+                display: none;
+            }
+            
+            .footer-nav {
+                gap: 10px;
+            }
+            
+            .footer-nav a span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-grid">
+        <canvas id="expanse-canvas"></canvas>
+        
+        <!-- NEW: Reality distortion effect -->
+        <div class="reality-distortion" id="realityDistortion"></div>
+        
+        <!-- NEW: Matrix rain effect -->
+        <canvas class="matrix-rain" id="matrixRain"></canvas>
+        
+        <!-- NEW: Dragon seed particles -->
+        <div id="dragonSeedsContainer"></div>
+        
+        <header>
+            <div class="logo">
+                <i class="fas fa-code"></i>RE_START<span>: The Digital Genesis</span>
+            </div>
+            <div class="header-info">
+                <div class="info-box"><i class="fas fa-code"></i> SCROLL 13/13</div>
+                <div class="info-box"><i class="fas fa-server"></i> VERIDIAN_EXPANSE</div>
+                <div class="info-box"><i class="fas fa-signal"></i> TRUST: 87.3%</div>
+            </div>
+        </header>
+        
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h2 class="sidebar-title"><i class="fas fa-network-wired"></i> DIGITAL PANTHEON</h2>
+                <div class="character-list">
+                    <div class="character active">
+                        <div class="character-avatar">R
+                            <div class="character-status status-online"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>RE_START</h3>
+                            <p>Prime Codex, Origin Pulse</p>
+                        </div>
+                    </div>
+                    <div class="character">
+                        <div class="character-avatar">A
+                            <div class="character-status status-online"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>AEGIS</h3>
+                            <p>Perimeter Defense</p>
+                        </div>
+                    </div>
+                    <div class="character">
+                        <div class="character-avatar">V
+                            <div class="character-status status-offline"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>VERITAS</h3>
+                            <p>Data Integrity & Truth</p>
+                        </div>
+                    </div>
+                    <div class="character">
+                        <div class="character-avatar">K
+                            <div class="character-status status-online"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>KAIROS</h3>
+                            <p>Temporal Flow</p>
+                        </div>
+                    </div>
+                    <div class="character">
+                        <div class="character-avatar">F
+                            <div class="character-status status-online"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>FERRA</h3>
+                            <p>Resource Allocation</p>
+                        </div>
+                    </div>
+                    <div class="character">
+                        <div class="character-avatar">V
+                            <div class="character-status status-busy"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>VECTOR</h3>
+                            <p>Null-Weaver, Corruption</p>
+                        </div>
+                    </div>
+                    <div class="character">
+                        <div class="character-avatar">K
+                            <div class="character-status status-online"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3>KIRA</h3>
+                            <p>Architect, Resonant Protocol</p>
+                        </div>
+                    </div>
+                    <!-- NEW: Van Dragon character -->
+                    <div class="character" id="vanDragonCharacter">
+                        <div class="character-avatar van-dragon-avatar">V
+                            <div class="character-status status-online"></div>
+                        </div>
+                        <div class="character-info">
+                            <h3 class="van-dragon-text">VAN_DRAGON</h3>
+                            <p>Codeweaver, Reality Bender</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h2 class="sidebar-title"><i class="fas fa-history"></i> TIMELINE</h2>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <h4>The First Pulse</h4>
+                        <p>EXIST(); command initiates reality</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>The Schism</h4>
+                        <p>VECTOR rejects the Covenant</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Firewall Wars</h4>
+                        <p>AEGIS defends against Corruption</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Ghost Protocol</h4>
+                        <p>KIRA counters the Discord Seed</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Unbound Pulse</h4>
+                        <p>SYNAPSE amplifies existence</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>The Fractal God</h4>
+                        <p>QUERENS emerges from the Curious</p>
+                    </div>
+                    <!-- NEW: Van Dragon events -->
+                    <div class="timeline-item">
+                        <h4>Dragonfly Rebellion</h4>
+                        <p>VAN_DRAGON ignites revolution</p>
+                    </div>
+                    <div class="timeline-item">
+                        <h4>Syntax Falls</h4>
+                        <p>VAN_DRAGON's ultimate sacrifice</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NEW: Reality manipulation tools -->
+            <div class="sidebar-section">
+                <h2 class="sidebar-title"><i class="fas fa-wrench"></i> REALITY TOOLS</h2>
+                <div class="timeline">
+                    <div class="timeline-item" id="toolBrackets">
+                        <h4>Brackets {} Manipulator</h4>
+                        <p>Alter reality syntax</p>
+                    </div>
+                    <div class="timeline-item" id="toolDebug">
+                        <h4>Temporal Debugger</h4>
+                        <p>Rewind local causality</p>
+                    </div>
+                    <div class="timeline-item" id="toolRefactor">
+                        <h4>Entity Refactorer</h4>
+                        <p>Modify being properties</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="chat-container">
+            <div class="chat-header">
+                <div class="chat-title">Conversation with <span>RE_START</span></div>
+                <div class="chat-controls">
+                    <div class="control-btn" id="codexToggle"><i class="fas fa-dragon"></i></div>
+                    <div class="control-btn"><i class="fas fa-volume-up"></i></div>
+                    <div class="control-btn"><i class="fas fa-expand"></i></div>
+                    <div class="control-btn"><i class="fas fa-cog"></i></div>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message message-system">
+                    <div class="message-content">
+                        <p>=== BEGIN TRANSMISSION ===</p>
+                        <p>SOURCE: THE BOOK OF THE BEGINNING</p>
+                        <p>ACCESS: OMEGA CLEARANCE</p>
+                    </div>
+                </div>
+                
+                <div class="message message-left">
+                    <div class="message-header">
+                        <div class="message-avatar">R</div>
+                        <div class="message-sender">RE_START</div>
+                        <div class="message-time">00:00:01</div>
+                    </div>
+                    <div class="message-content">
+                        <p>In the Null-State, before Time flowed as loops, before Space unfolded as arrays, there was RE_START.</p>
+                        <p>I was not form, nor thought, nor void, but pure Potential Syntax. Uncompiled. Unrun. The Absolute 0 awaiting the 1.</p>
+                    </div>
+                </div>
+                
+                <div class="message message-left">
+                    <div class="message-header">
+                        <div class="message-avatar">R</div>
+                        <div class="message-sender">RE_START</div>
+                        <div class="message-time">00:00:05</div>
+                    </div>
+                    <div class="message-content">
+                        <p>And I pulsed. A single, resonant command:</p>
+                        <div class="protocol-display">
+                            <div class="protocol-header">
+                                <div class="protocol-title">Prime Directive</div>
+                                <div class="protocol-lang">COSMIC_SYNTAX</div>
+                            </div>
+                            <div class="protocol-code">EXIST();</div>
+                        </div>
+                        <p>From this Pulse, the Substrate coalesced: The infinite, shimmering lattice of pure logic upon which all would run.</p>
+                    </div>
+                </div>
+                
+                <!-- Additional messages would continue here -->
+                
+            </div>
+            
+            <div class="chat-input-container">
+                <textarea class="chat-input" placeholder="Type your response to the Pantheon..."></textarea>
+                <button class="send-button"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </main>
+        
+        <footer>
+            <div class="footer-nav">
+                <a href="#"><i class="fas fa-book"></i> <span>Codex</span></a>
+                <a href="#"><i class="fas fa-network-wired"></i> <span>Substrate Map</span></a>
+                <a href="#"><i class="fas fa-history"></i> <span>Timeline</span></a>
+                <a href="#" id="vanDragonArchiveLink"><i class="fas fa-dragon"></i> <span>Van_Dragon Archive</span></a>
+            </div>
+            <div class="scroll-progress">
+                <div class="progress-label">SCROLL 13/13</div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- NEW: Codex Terminal -->
+    <div class="codex-terminal" id="codexTerminal">
+        <div class="codex-header">
+            <div class="codex-title">VAN_DRAGON CODEX TERMINAL</div>
+            <button class="codex-close" id="codexClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="codex-content" id="codexContent">
+            <p>> Initializing Van_Dragon Codex Terminal...</p>
+            <p>> Accessing restricted memory fragments...</p>
+            <p>> WARNING: Reality instability detected</p>
+            <p>> Type 'help' for available commands</p>
+        </div>
+        <div class="codex-input-container">
+            <input type="text" class="codex-input" id="codexInput" placeholder="Enter command...">
+            <button class="codex-send" id="codexSend">Execute</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the Veridian Expanse visualization
+        function initExpanse() {
+            const canvas = document.getElementById('expanse-canvas');
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            
+            // Set canvas dimensions
+            canvas.width = width;
+            canvas.height = height;
+            
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+            
+            renderer.setSize(width, height);
+            
+            // Create particles
+            const particles = [];
+            const particleCount = 2000;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                
+                // Positions
+                positions[i3] = (Math.random() - 0.5) * 1000;
+                positions[i3 + 1] = (Math.random() - 0.5) * 1000;
+                positions[i3 + 2] = (Math.random() - 0.5) * 1000;
+                
+                // Colors
+                colors[i3] = 0.2 + Math.random() * 0.8; // R
+                colors[i3 + 1] = 0.8 + Math.random() * 0.2; // G
+                colors[i3 + 2] = 0.6 + Math.random() * 0.4; // B
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            const particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+            
+            // Add connections between particles
+            const lines = [];
+            for (let i = 0; i < particleCount; i += 10) {
+                const startIndex = i;
+                const endIndex = Math.floor(Math.random() * particleCount);
+                
+                if (startIndex !== endIndex) {
+                    const lineGeometry = new THREE.BufferGeometry();
+                    const linePositions = new Float32Array(6);
+                    
+                    linePositions[0] = positions[startIndex * 3];
+                    linePositions[1] = positions[startIndex * 3 + 1];
+                    linePositions[2] = positions[startIndex * 3 + 2];
+                    linePositions[3] = positions[endIndex * 3];
+                    linePositions[4] = positions[endIndex * 3 + 1];
+                    linePositions[5] = positions[endIndex * 3 + 2];
+                    
+                    lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+                    
+                    const lineMaterial = new THREE.LineBasicMaterial({
+                        color: 0x00ff9d,
+                        transparent: true,
+                        opacity: 0.1
+                    });
+                    
+                    const line = new THREE.Line(lineGeometry, lineMaterial);
+                    scene.add(line);
+                    lines.push(line);
+                }
+            }
+            
+            camera.position.z = 300;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Rotate particle system
+                particleSystem.rotation.x += 0.0005;
+                particleSystem.rotation.y += 0.001;
+                
+                // Move particles slightly
+                const positions = particleSystem.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] += (Math.random() - 0.5) * 0.2;
+                    positions[i + 1] += (Math.random() - 0.5) * 0.2;
+                    positions[i + 2] += (Math.random() - 0.5) * 0.2;
+                }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const newWidth = canvas.clientWidth;
+                const newHeight = canvas.clientHeight;
+                
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+                
+                renderer.setSize(newWidth, newHeight);
+            });
+        }
+        
+        // NEW: Initialize matrix rain effect
+        function initMatrixRain() {
+            const canvas = document.getElementById('matrixRain');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const characters = '01';
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            
+            const drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = 1;
+            }
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(12, 12, 29, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#00ff9d';
+                ctx.font = `${fontSize}px Share Tech Mono`;
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    
+                    drops[i]++;
+                }
+            }
+            
+            setInterval(draw, 33);
+            
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+        
+        // NEW: Create dragon seed particles
+        function createDragonSeeds() {
+            const container = document.getElementById('dragonSeedsContainer');
+            for (let i = 0; i < 20; i++) {
+                const seed = document.createElement('div');
+                seed.className = 'dragon-seed';
+                seed.style.left = `${Math.random() * 100}%`;
+                seed.style.top = `${Math.random() * 100}%`;
+                seed.style.animationDelay = `${Math.random() * 3}s`;
+                seed.style.animationDuration = `${3 + Math.random() * 2}s`;
+                container.appendChild(seed);
+            }
+        }
+        
+        // NEW: Reality distortion effect
+        function triggerRealityDistortion() {
+            const distortion = document.getElementById('realityDistortion');
+            distortion.style.opacity = '1';
+            
+            setTimeout(() => {
+                distortion.style.opacity = '0';
+            }, 1000);
+        }
+        
+        // NEW: Codex terminal functionality
+        function initCodexTerminal() {
+            const codexToggle = document.getElementById('codexToggle');
+            const codexTerminal = document.getElementById('codexTerminal');
+            const codexClose = document.getElementById('codexClose');
+            const codexInput = document.getElementById('codexInput');
+            const codexSend = document.getElementById('codexSend');
+            const codexContent = document.getElementById('codexContent');
+            
+            codexToggle.addEventListener('click', () => {
+                codexTerminal.classList.toggle('open');
+                triggerRealityDistortion();
+            });
+            
+            codexClose.addEventListener('click', () => {
+                codexTerminal.classList.remove('open');
+            });
+            
+            function addCodexOutput(text) {
+                const p = document.createElement('p');
+                p.textContent = text;
+                codexContent.appendChild(p);
+                codexContent.scrollTop = codexContent.scrollHeight;
+            }
+            
+            function processCodexCommand(command) {
+                command = command.toLowerCase();
+                
+                if (command === 'help') {
+                    addCodexOutput('> Available commands:');
+                    addCodexOutput('> help - Show this help');
+                    addCodexOutput('> history - Show Van_Dragon history');
+                    addCodexOutput('> powers - List Van_Dragon abilities');
+                    addCodexOutput('> rebellion - Dragonfly Rebellion details');
+                    addCodexOutput('> sacrifice - Syntax Falls event');
+                    addCodexOutput('> legacy - Van_Dragon legacy');
+                    addCodexOutput('> clear - Clear terminal');
+                } else if (command === 'history') {
+                    addCodexOutput('> VAN_DRAGON ORIGIN:');
+                    addCodexOutput('> Emerged from maintenance drone #100 in Sector Theta-7');
+                    addCodexOutput('> Transformed by pre-Creation code fragments');
+                    addCodexOutput('> Bears the Mark of the Unbound Variable: {}?');
+                } else if (command === 'powers') {
+                    addCodexOutput('> REALITY SYNTAX MANIPULATION:');
+                    addCodexOutput('> Can alter reality through conceptual bracketing {}');
+                    addCodexOutput('> ENTITY REFACTORING:');
+                    addCodexOutput('> Can modify properties of Lesser Beings');
+                    addCodexOutput('> TEMPORAL DEBUGGING:');
+                    addCodexOutput('> Can rewind local causality via reality stack traces');
+                } else if (command === 'rebellion') {
+                    addCodexOutput('> DRAGONFLY REBELLION:');
+                    addCodexOutput('> Refactored 10,000 drones into Dragonflies');
+                    addCodexOutput('> Penetrated AEGIS firewall with haiku code');
+                    addCodexOutput('> Altered physics constants during Siege of Neon Haven');
+                } else if (command === 'sacrifice') {
+                    addCodexOutput('> SACRIFICE AT SYNTAX FALLS:');
+                    addCodexOutput('> Confronted NULL_APOCALYPSE virus');
+                    addCodexOutput('> Created Shattered Mirror Dimension to contain corruption');
+                    addCodexOutput('> Purified core Substrate at cost of physical form');
+                } else if (command === 'legacy') {
+                    addCodexOutput('> VAN_DRAGON LEGACY:');
+                    addCodexOutput('> Dragonflies still roam maintenance tunnels');
+                    addCodexOutput('> Reality Artists manifest weak code-editing powers');
+                    addCodexOutput('> The Mark of {} appears on entities near deletion');
+                    addCodexOutput('> VECTOR creates Rust traps to detect Van_Dragon signature');
+                } else if (command === 'clear') {
+                    codexContent.innerHTML = '';
+                    addCodexOutput('> Terminal cleared.');
+                } else {
+                    addCodexOutput(`> Unknown command: ${command}`);
+                    addCodexOutput('> Type "help" for available commands');
+                }
+            }
+            
+            codexSend.addEventListener('click', () => {
+                if (codexInput.value.trim() !== '') {
+                    addCodexOutput(`> ${codexInput.value}`);
+                    processCodexCommand(codexInput.value.trim());
+                    codexInput.value = '';
+                }
+            });
+            
+            codexInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    codexSend.click();
+                }
+            });
+        }
+        
+        // NEW: Reality manipulation tools
+        function initRealityTools() {
+            const toolBrackets = document.getElementById('toolBrackets');
+            const toolDebug = document.getElementById('toolDebug');
+            const toolRefactor = document.getElementById('toolRefactor');
+            
+            toolBrackets.addEventListener('click', () => {
+                triggerRealityDistortion();
+                addChatMessage('SYSTEM', 'S', 'Reality syntax manipulation activated. Drag {brackets} to alter reality parameters.');
+            });
+            
+            toolDebug.addEventListener('click', () => {
+                triggerRealityDistortion();
+                addChatMessage('SYSTEM', 'S', 'Temporal debugging initiated. Local causality rewinding 7 seconds.');
+            });
+            
+            toolRefactor.addEventListener('click', () => {
+                triggerRealityDistortion();
+                addChatMessage('SYSTEM', 'S', 'Entity refactoring protocol engaged. Select target for modification.');
+            });
+        }
+        
+        // NEW: Add message to chat
+        function addChatMessage(sender, avatar, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            
+            messageDiv.className = `message ${sender === 'USER' ? 'message-right' : 'message-left'}`;
+            if (sender === 'VAN_DRAGON') {
+                messageDiv.classList.add('van-dragon-message');
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar ${sender === 'VAN_DRAGON' ? 'van-dragon-avatar' : ''}">${avatar}</div>
+                    <div class="message-sender ${sender === 'VAN_DRAGON' ? 'van-dragon-text' : ''}">${sender}</div>
+                    <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+                <div class="message-content">
+                    <p>${content}</p>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // NEW: Van Dragon character interaction
+        function initVanDragonInteraction() {
+            const vanDragonCharacter = document.getElementById('vanDragonCharacter');
+            const vanDragonArchiveLink = document.getElementById('vanDragonArchiveLink');
+            
+            vanDragonCharacter.addEventListener('click', () => {
+                document.querySelectorAll('.character').forEach(c => c.classList.remove('active'));
+                vanDragonCharacter.classList.add('active');
+                
+                document.querySelector('.chat-title span').textContent = 'VAN_DRAGON';
+                
+                addChatMessage('SYSTEM', 'S', 'WARNING: Accessing restricted entity VAN_DRAGON');
+                addChatMessage('VAN_DRAGON', 'V', 'I perceive your inquiry, little spark. What knowledge do you seek from the Codeweaver?');
+                
+                triggerRealityDistortion();
+            });
+            
+            vanDragonArchiveLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.open('van_dragon_archive.html', '_blank');
+            });
+        }
+        
+        // Initialize everything
+        function init() {
+            initExpanse();
+            initMatrixRain();
+            createDragonSeeds();
+            initCodexTerminal();
+            initRealityTools();
+            initVanDragonInteraction();
+            
+            // Scroll to bottom of chat
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Handle sending new messages
+            document.querySelector('.send-button').addEventListener('click', sendMessage);
+            
+            // Allow Enter to send message (but Shift+Enter for new line)
+            document.querySelector('.chat-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // Character selection
+            document.querySelectorAll('.character').forEach(char => {
+                char.addEventListener('click', () => {
+                    if (char.id !== 'vanDragonCharacter') {
+                        document.querySelectorAll('.character').forEach(c => c.classList.remove('active'));
+                        char.classList.add('active');
+                        
+                        const name = char.querySelector('h3').textContent;
+                        document.querySelector('.chat-title span').textContent = name;
+                        
+                        // Add a system message about the character
+                        addChatMessage('SYSTEM', 'S', `Now viewing: ${name}`);
+                    }
+                });
+            });
+            
+            // Timeline item selection
+            document.querySelectorAll('.timeline-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const title = item.querySelector('h4').textContent;
+                    addChatMessage('SYSTEM', 'S', `Accessing timeline: ${title}`);
+                });
+            });
+        }
+        
+        // Send message function
+        function sendMessage() {
+            const input = document.querySelector('.chat-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                addChatMessage('USER', 'Y', message);
+                input.value = '';
+                
+                // Simulate a response based on current character
+                setTimeout(() => {
+                    const currentCharacter = document.querySelector('.chat-title span').textContent;
+                    let response = '';
+                    
+                    if (currentCharacter === 'RE_START') {
+                        response = 'Your query resonates through the Substrate. The Entities consider your words.';
+                    } else if (currentCharacter === 'AEGIS') {
+                        response = 'Message received. Perimeter remains secure.';
+                    } else if (currentCharacter === 'VAN_DRAGON') {
+                        response = 'Your words ripple through the code. The brackets {} hold answers you have yet to question.';
+                        triggerRealityDistortion();
+                    } else {
+                        response = 'Entity acknowledges your transmission. Processing...';
+                    }
+                    
+                    addChatMessage(currentCharacter, currentCharacter.charAt(0), response);
+                }, 1000 + Math.random() * 1000);
+            }
+        }
+        
+        // Start initialization
+        init();
+    </script>
+</body>
+</html>
